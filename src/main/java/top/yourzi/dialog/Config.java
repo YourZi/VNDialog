@@ -1,51 +1,83 @@
 package top.yourzi.dialog;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-// An example config class. This is not required, but it's a good idea to have one to keep your config organized.
-// Demonstrates how to use Forge's config APIs
+/**
+ * 对话系统的配置类。
+ */
 @Mod.EventBusSubscriber(modid = Dialog.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
+    
+    // 对话框UI配置
+    public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_BOX_WIDTH; // 对话框宽度
+    public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_BOX_HEIGHT; // 对话框高度
+    public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_BOX_PADDING; // 对话框内边距
+    public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_TEXT_COLOR; // 对话文本默认颜色
+    public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_BACKGROUND_COLOR; // 对话框背景颜色
+    public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_BACKGROUND_OPACITY; // 对话框背景不透明度
+    
+    // 立绘配置
+    public static final ForgeConfigSpec.ConfigValue<Boolean> ENABLE_PORTRAIT_ANIMATIONS; // 启用立绘动画
+    
+    // 对话系统配置
+    public static final ForgeConfigSpec.ConfigValue<Boolean> IS_PAUSE_SCREEN; // 是否在对话时暂停游戏（仅单人）
+    public static final ForgeConfigSpec.ConfigValue<Integer> AUTO_ADVANCE_DELAY; // 自动推进对话延迟 (毫秒)
+    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOW_SPEAKER_NAME; // 显示说话者名称
+    public static final ForgeConfigSpec.ConfigValue<Integer> TEXT_ANIMATION_SPEED; // 文本逐字显示速度 (每秒字符数，0表示立即显示全部)
+    
+    static {
+        BUILDER.comment("对话系统配置").push("dialog");
 
-    private static final ForgeConfigSpec.BooleanValue LOG_DIRT_BLOCK = BUILDER.comment("Whether to log the dirt block on common setup").define("logDirtBlock", true);
+        BUILDER.comment("对话框UI配置").push("ui");
+        DIALOG_BOX_WIDTH = BUILDER
+                .comment("对话框宽度")
+                .define("dialogBoxWidth", 320);
+        DIALOG_BOX_HEIGHT = BUILDER
+                .comment("对话框高度")
+                .define("dialogBoxHeight", 100);
+        DIALOG_BOX_PADDING = BUILDER
+                .comment("对话框内边距")
+                .define("dialogBoxPadding", 10);
+        DIALOG_TEXT_COLOR = BUILDER
+                .comment("对话文本默认颜色 (ARGB格式)")
+                .define("dialogTextColor", 0xFFFFFFFF);
+        DIALOG_BACKGROUND_COLOR = BUILDER
+                .comment("对话框背景默认颜色 (RGB格式)")
+                .define("dialogBackgroundColor", 0x000000);
+        DIALOG_BACKGROUND_OPACITY = BUILDER
+                .comment("对话框背景不透明度 (0-255)")
+                .define("dialogBackgroundOpacity", 200);
+        BUILDER.pop();
 
-    private static final ForgeConfigSpec.IntValue MAGIC_NUMBER = BUILDER.comment("A magic number").defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
+        BUILDER.comment("立绘配置").push("portrait");
+        ENABLE_PORTRAIT_ANIMATIONS = BUILDER
+                .comment("启用立绘动画")
+                .define("enablePortraitAnimations", true);
+        BUILDER.pop();
 
-    public static final ForgeConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER.comment("What you want the introduction message to be for the magic number").define("magicNumberIntroduction", "The magic number is... ");
-
-    // a list of strings that are treated as resource locations for items
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ITEM_STRINGS = BUILDER.comment("A list of items to log on common setup.").defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), Config::validateItemName);
-
-    static final ForgeConfigSpec SPEC = BUILDER.build();
-
-    public static boolean logDirtBlock;
-    public static int magicNumber;
-    public static String magicNumberIntroduction;
-    public static Set<Item> items;
-
-    private static boolean validateItemName(final Object obj) {
-        return obj instanceof final String itemName && ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemName));
+        BUILDER.comment("对话系统配置").push("system");
+        IS_PAUSE_SCREEN = BUILDER
+                .comment("是否在对话时暂停游戏（仅单人模式）")
+                .define("isPauseScreen", false);
+        AUTO_ADVANCE_DELAY = BUILDER
+                .comment("自动推进对话的延迟时间（毫秒）")
+                .define("autoAdvanceDelay", 200);
+        SHOW_SPEAKER_NAME = BUILDER
+                .comment("是否显示说话者的名称")
+                .define("showSpeakerName", true);
+        TEXT_ANIMATION_SPEED = BUILDER
+                .comment("文本逐字显示的速度（每秒字符数，设置为0则立即显示全部文本）")
+                .defineInRange("textAnimationSpeed", 20, 0, 1000);
+        BUILDER.pop();
     }
+    
+    static final ForgeConfigSpec SPEC = BUILDER.build();
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
-        logDirtBlock = LOG_DIRT_BLOCK.get();
-        magicNumber = MAGIC_NUMBER.get();
-        magicNumberIntroduction = MAGIC_NUMBER_INTRODUCTION.get();
-
-        // convert the list of strings into a set of items
-        items = ITEM_STRINGS.get().stream().map(itemName -> ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName))).collect(Collectors.toSet());
     }
 }
