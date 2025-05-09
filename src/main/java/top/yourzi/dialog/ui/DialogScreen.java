@@ -121,7 +121,6 @@ public class DialogScreen extends Screen {
     private boolean showingHistory = false;
     private int historyScrollOffset = 0;
     private List<DialogEntry> historyEntries = new ArrayList<>();
-    private static final int HISTORY_MAX_LINES_DISPLAYED = Config.MAX_HISTORY_LINES.get(); // 历史记录界面一次显示的最大行数
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
@@ -474,6 +473,14 @@ public class DialogScreen extends Screen {
         }
         // 渲染按钮和其他UI元素
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
+
+        // 悬浮文本提示
+        if (this.viewHistoryButton.isMouseOver(mouseX, mouseY)) {
+            guiGraphics.renderTooltip(this.font, Component.translatable("dialog.ui.history"), mouseX, mouseY);
+        }
+        if (this.autoPlayButton.isMouseOver(mouseX, mouseY)) {
+            guiGraphics.renderTooltip(this.font, Component.translatable("dialog.ui.auto_play"), mouseX, mouseY);
+        }
 
         // 处理快速跳过
         boolean isCtrlPressed = Minecraft.getInstance().getWindow() != null &&
