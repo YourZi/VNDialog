@@ -34,20 +34,15 @@ public class DialogManager {
     // 服务端: 存储所有从数据包加载的对话序列
     // 客户端: 存储从服务端同步过来的对话序列
     private final Map<String, DialogSequence> dialogSequences = new HashMap<>();
-    // 当前显示的对话序列 (仅客户端)
-    @OnlyIn(Dist.CLIENT)
+    // 当前显示的对话序列
     private DialogSequence currentSequence;
-    // 当前显示的对话条目 (仅客户端)
-    @OnlyIn(Dist.CLIENT)
+    // 当前显示的对话条目
     private DialogEntry currentEntry;
-    // 对话历史记录 (仅客户端)
-    @OnlyIn(Dist.CLIENT)
+    // 对话历史记录
     private final List<DialogEntry> dialogHistory = new ArrayList<>();
-    // 标记下一次对话推进是否由快速跳过触发 (仅客户端)
-    @OnlyIn(Dist.CLIENT)
+    // 标记下一次对话推进是否由快速跳过触发
     private static boolean isFastForwardingNext = false;
-    // 自动播放状态 (仅客户端)
-    @OnlyIn(Dist.CLIENT)
+    // 自动播放状态
     private static boolean isAutoPlaying = false;
 
     private DialogManager() {}
