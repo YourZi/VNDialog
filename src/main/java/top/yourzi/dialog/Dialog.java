@@ -1,7 +1,6 @@
 package top.yourzi.dialog;
 
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;

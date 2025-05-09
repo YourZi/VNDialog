@@ -21,15 +21,15 @@ public class PlayerEventHandler {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            Dialog.LOGGER.info("玩家 {} 已登录，准备同步对话数据...", player.getName().getString());
+            Dialog.LOGGER.info("Player {} is logged in and ready to synchronize conversation data...", player.getName().getString());
             Map<String, String> allDialogJsons = DialogManager.getInstance().getAllDialogJsonsForSync();
             if (!allDialogJsons.isEmpty()) {
                 NetworkHandler.sendAllDialogsToPlayer(player, allDialogJsons);
-                Dialog.LOGGER.info("已向玩家 {} 发送 {} 个对话数据进行同步。", player.getName().getString(), allDialogJsons.size());
+                Dialog.LOGGER.info("Sent {} conversation data to player {} for synchronization.", allDialogJsons.size(), player.getName().getString());
             } else {
                 // 如果没有对话数据，也发送一个空包，以确保客户端清空旧缓存（如果存在）
                 NetworkHandler.sendAllDialogsToPlayer(player, new java.util.HashMap<>());
-                Dialog.LOGGER.info("没有对话数据需要同步给玩家 {}，发送空同步包以清空客户端缓存。", player.getName().getString());
+                Dialog.LOGGER.info("There is no conversation data to be synchronized to the player {}, send an empty sync packet to clear the client cache.", player.getName().getString());
             }
         }
     }
@@ -42,21 +42,8 @@ public class PlayerEventHandler {
                                                   ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler, 
                                                   Executor backgroundExecutor, Executor gameExecutor) {
                 return CompletableFuture.runAsync(() -> {
-                    Dialog.LOGGER.info("数据包重载事件触发，开始加载对话数据...");
+                    Dialog.LOGGER.info("Datapack reload event triggered to start loading dialog data...");
                     DialogManager.getInstance().loadDialogsFromServer(resourceManager);
-                    // 数据加载后，需要通知所有在线玩家同步新的对话数据
-                    // 这通常在 loadDialogsFromServer 内部不直接处理，
-                    // 而是由 /reload 命令（DialogCommand）显式触发同步，
-                    // 或者在玩家加入时（onPlayerLoggedIn）同步。
-                    // 如果希望每次数据包重载都自动同步给所有玩家，可以在这里添加：
-                    // Map<String, String> allDialogJsons = DialogManager.getInstance().getAllDialogJsonsForSync();
-                    // if (event.getServer() != null) { // 确保服务器实例存在
-                    //     NetworkHandler.sendAllDialogsToAllPlayers(allDialogJsons);
-                    //     Dialog.LOGGER.info("数据包重载后，已向所有客户端发送 {} 个对话数据进行同步。", allDialogJsons.size());
-                    // } else {
-                    //     Dialog.LOGGER.warn("数据包重载后，无法获取服务器实例来同步对话数据。");
-                    // }
-                    // 当前设计下，/dialog reload 会处理同步，玩家登录也会同步，这里仅加载数据到服务端即可。
                 }, backgroundExecutor).thenCompose(preparationBarrier::wait);
             }
 
@@ -65,6 +52,6 @@ public class PlayerEventHandler {
                 return Dialog.MODID + "_dialog_reloader"; // 给监听器一个唯一的名字
             }
         });
-        Dialog.LOGGER.info("已注册对话数据重载监听器。");
+        Dialog.LOGGER.info("Registered dialog data reload listener.");
     }
 }

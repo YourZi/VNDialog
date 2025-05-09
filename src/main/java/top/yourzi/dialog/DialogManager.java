@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Collections; // Added for client-side check
 
 /**
  * 对话系统的核心管理类，负责加载和管理对话序列。
@@ -70,7 +71,6 @@ public class DialogManager {
      * 当对话条目或选项指定命令时，调用此方法。
      * @param command 要执行的命令字符串。
      */
-    @OnlyIn(Dist.CLIENT)
     public void executeCommand(String command) {
         if (command != null && !command.isEmpty()) {
             Dialog.LOGGER.info("Client requesting server to execute command: {}", command);
@@ -86,32 +86,32 @@ public class DialogManager {
      */
     public void loadDialogsFromServer(ResourceManager resourceManager) {
         dialogSequences.clear();
-        Dialog.LOGGER.info("服务端正在从数据包加载对话文件...");
+        Dialog.LOGGER.info("The server is loading the dialog file from the datapack......");
 
         Map<ResourceLocation, Resource> modSpecificResources = resourceManager.listResources("dialogs", resource -> resource.getPath().endsWith(".json")).entrySet().stream()
             .filter(entry -> entry.getKey().getNamespace().equals(Dialog.MODID))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        Dialog.LOGGER.info("在 {} 命名空间下的 'dialogs' 目录中找到 {} 个JSON文件", Dialog.MODID, modSpecificResources.size());
+        Dialog.LOGGER.info("Find {} JSON file in the directory", modSpecificResources.size());
 
         modSpecificResources.forEach((resourceLocation, resource) -> {
-            Dialog.LOGGER.info("正在处理对话文件: {}", resourceLocation);
+            Dialog.LOGGER.info("Dialog files being processed. {}", resourceLocation);
             try {
                 DialogSequence sequence = parseDialogSequenceFromFile(resource); // 解析对话序列
                 if (sequence != null && sequence.getId() != null) {
                     dialogSequences.put(sequence.getId(), sequence);
-                    Dialog.LOGGER.info("成功加载对话序列: {}", sequence.getId());
+                    Dialog.LOGGER.info("Successfully loaded dialog sequence. {}", sequence.getId());
                 } else {
-                    Dialog.LOGGER.warn("对话序列为空或ID为空: {}", resourceLocation);
+                    Dialog.LOGGER.warn("Empty dialog sequence or empty ID. {}", resourceLocation);
                 }
             } catch (Exception e) {
-                Dialog.LOGGER.error("加载对话文件失败 {}: {}", resourceLocation, e.getMessage(), e);
+                Dialog.LOGGER.error("Failed to load dialog file {}: {}", resourceLocation, e.getMessage(), e);
             }
         });
 
-        Dialog.LOGGER.info("服务端总共加载了 {} 个对话序列", dialogSequences.size());
+        Dialog.LOGGER.info("The server loaded a total of {} dialog sequences", dialogSequences.size());
         if (dialogSequences.isEmpty()) {
-            Dialog.LOGGER.warn("没有找到任何对话序列，请检查数据包中的 'dialogs' 目录 ('data/{}/dialogs') 和文件格式", Dialog.MODID);
+            Dialog.LOGGER.warn("No dialog sequence was found, please check the 'dialogs' directory ('data/{}/dialogs') or file format in the datapack.", Dialog.MODID);
         }
     }
 
@@ -124,7 +124,7 @@ public class DialogManager {
                 new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
             return GSON.fromJson(reader, DialogSequence.class);
         } catch (IOException | com.google.gson.JsonSyntaxException e) {
-            Dialog.LOGGER.error("读取或解析对话JSON文件失败 ({}): {}", resource.sourcePackId(), e.getMessage());
+            Dialog.LOGGER.error("Failure to read or parse dialog JSON file ({}): {}", resource.sourcePackId(), e.getMessage());
             // 尝试读取内容以进行更详细的调试
             try (BufferedReader contentReader = new BufferedReader(new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
                 StringBuilder jsonContent = new StringBuilder();
@@ -132,9 +132,9 @@ public class DialogManager {
                 while ((line = contentReader.readLine()) != null) {
                     jsonContent.append(line);
                 }
-                Dialog.LOGGER.debug("问题JSON内容: {}", jsonContent.toString());
+                Dialog.LOGGER.debug("JSON: {}", jsonContent.toString());
             } catch (IOException ioe) {
-                Dialog.LOGGER.error("无法读取问题JSON内容进行调试: {}", ioe.getMessage());
+                Dialog.LOGGER.error("Unable to read problematic JSON content for debugging. {}", ioe.getMessage());
             }
             return null;
         }
@@ -146,11 +146,12 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void clearAllDialogsOnClient() {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
         dialogSequences.clear();
         currentSequence = null;
         currentEntry = null;
         clearDialogHistory();
-        Dialog.LOGGER.info("客户端对话缓存已清空。");
+        Dialog.LOGGER.info("The client dialog cache has been cleared.");
     }
 
     /**
@@ -159,28 +160,29 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void receiveAllDialogsFromServer(Map<String, String> dialogDataMap) {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
         clearAllDialogsOnClient(); // 先清空旧数据
-        Dialog.LOGGER.info("客户端接收到 {} 个对话数据进行同步。", dialogDataMap.size());
+        Dialog.LOGGER.info("The client receives {} conversation data for synchronization.", dialogDataMap.size());
         dialogDataMap.forEach((id, json) -> {
             try {
                 DialogSequence sequence = GSON.fromJson(json, DialogSequence.class);
                 if (sequence != null && sequence.getId() != null) {
                     if (!id.equals(sequence.getId())) {
-                        Dialog.LOGGER.warn("对话ID不匹配！预期ID: {}, JSON中的ID: {}. 将使用预期ID.", id, sequence.getId());
+                        Dialog.LOGGER.warn("Dialog ID mismatch! Expected ID: {}, ID in JSON: {}. Will use expected ID.", id, sequence.getId());
                     }
                     dialogSequences.put(id, sequence); // 使用map的key作为权威ID
-                    Dialog.LOGGER.debug("客户端成功缓存对话: {}", id);
+                    Dialog.LOGGER.debug("Client Successfully Cached Conversation. {}", id);
                 } else {
-                    Dialog.LOGGER.warn("从服务端接收的对话数据解析失败或ID为空。ID: {}, JSON: {}", id, json);
+                    Dialog.LOGGER.warn("Parsing of the dialog data received from the server failed or the ID is null. ID: {}, JSON: {}", id, json);
                 }
             } catch (com.google.gson.JsonSyntaxException e) {
-                Dialog.LOGGER.error("解析从服务端接收的对话JSON失败。ID: {}, 错误: {}", id, e.getMessage());
-                Dialog.LOGGER.debug("问题JSON (ID: {}): {}", id, json, e);
+                Dialog.LOGGER.error("Failed to parse the dialog JSON received from the server. ID: {}, 错误: {}", id, e.getMessage());
+                Dialog.LOGGER.debug("(ID: {}): {}", id, json, e);
             }
         });
-        Dialog.LOGGER.info("客户端对话数据同步完成，当前缓存 {} 个对话。", dialogSequences.size());
+        Dialog.LOGGER.info("Client conversation data synchronization is complete, currently caching {} conversations.", dialogSequences.size());
         if (dialogSequences.isEmpty() && !dialogDataMap.isEmpty()) {
-            Dialog.LOGGER.warn("已接收到对话数据，但解析后缓存为空，请检查JSON格式和内容。");
+            Dialog.LOGGER.warn("Dialog data has been received but the cache is empty after parsing, please check the JSON format and content.");
         }
     }
 
@@ -199,6 +201,7 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public List<DialogEntry> getDialogHistory() {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return Collections.emptyList();
         return new ArrayList<>(dialogHistory);
     }
 
@@ -216,6 +219,7 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void recordChoiceForCurrentDialog(String optionText) {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
         if (currentEntry != null) {
             currentEntry.setSelectedOptionText(optionText);
             // 更新历史记录中最新的对应条目
@@ -270,20 +274,21 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void receiveDialogData(String dialogId, String dialogJson) {
-        Dialog.LOGGER.info("客户端接收到对话数据: {}", dialogId);
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
+        Dialog.LOGGER.info("Client receives dialog data: {}", dialogId);
         try {
             DialogSequence sequence = GSON.fromJson(dialogJson, DialogSequence.class);
             if (sequence != null && sequence.getId() != null) {
                 dialogSequences.put(sequence.getId(), sequence);
-                Dialog.LOGGER.info("成功解析并存储从服务端接收的对话: {}", sequence.getId());
+                Dialog.LOGGER.info("Successfully parsing and storing conversations received from the server side: {}", sequence.getId());
                 // 确保在主线程显示对话界面
                 Minecraft.getInstance().execute(() -> showDialog(dialogId)); // Now show the dialog
             } else {
-                Dialog.LOGGER.warn("从服务端接收的对话数据解析失败或ID为空: {}", dialogId);
+                Dialog.LOGGER.warn("Failed to parse the dialog data received from the server or the ID is null: {}", dialogId);
                 sendPlayerMessage(Component.translatable("dialog.manager.received_sequence_empty", dialogId));
             }
         } catch (Exception e) {
-            Dialog.LOGGER.error("解析从服务端接收的对话JSON失败 {}: {}", dialogId, e.getMessage());
+            Dialog.LOGGER.error("Failed to parse dialog '{}' JSON received from server", dialogId);
             sendPlayerMessage(Component.translatable("dialog.manager.received_parse_failed", dialogId, e.getMessage()));
             e.printStackTrace();
         }
@@ -294,14 +299,12 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void showDialog(String dialogId) {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
         stopAutoPlay(); // 每次对话启动时重置自动播放为关闭状态
         DialogSequence sequence = getDialogSequence(dialogId);
         if (sequence == null) {
-            // Dialog not found locally, request from server
-            Dialog.LOGGER.info("本地未找到对话 '{}'，正在向服务端请求...", dialogId);
+            Dialog.LOGGER.info("Dialog '{}' was not found locally and is being requested from the server...", dialogId);
             NetworkHandler.sendRequestDialogToServer(dialogId);
-            // We will not show the dialog immediately. It will be shown once the server sends the data back.
-            // We can optionally show a loading message to the player here.
             sendPlayerMessage(Component.translatable("dialog.manager.requesting_from_server", dialogId));
             return;
         }
@@ -361,6 +364,7 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void showNextDialog() {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
         if (currentSequence == null || currentEntry == null) {
             return;
         }
@@ -384,6 +388,7 @@ public class DialogManager {
      */
     @OnlyIn(Dist.CLIENT)
     public void jumpToDialog(String targetId) {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
         if (currentSequence == null) {
             return;
         }
