@@ -53,7 +53,7 @@ public class ReloadDialogsPacket {
         Dialog.LOGGER.info("收到重新加载对话的网络包");
         // 在客户端重新加载对话
         Minecraft.getInstance().execute(() -> {
-            DialogManager.getInstance().loadDialogs(Minecraft.getInstance().getResourceManager(), true);
+            DialogManager.getInstance().loadDialogsFromServer(Minecraft.getInstance().getResourceManager());
             Dialog.LOGGER.info("客户端对话已重新加载");
         });
     }

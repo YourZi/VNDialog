@@ -46,8 +46,8 @@ public class DialogScreen extends Screen {
             if (path != null && !path.isEmpty()) {
                 this.resourceLocation = new ResourceLocation(Dialog.MODID, "textures/portraits/" + path);
                 this.brightness = brightness;
-                this.position = position != null ? position : PortraitPosition.CENTER; // 默认位置
-                this.animationType = animationType != null ? animationType : PortraitAnimationType.NONE; // 存储动画类型
+                this.position = position != null ? position : PortraitPosition.RIGHT; // 位置
+                this.animationType = animationType != null ? animationType : PortraitAnimationType.NONE; // 动画类型
                 loadDimensions();
                 if (Config.ENABLE_PORTRAIT_ANIMATIONS.get() && loadedSuccessfully && this.animationType != PortraitAnimationType.NONE) {
                     this.animationStartTime = System.currentTimeMillis();
@@ -653,9 +653,13 @@ public class DialogScreen extends Screen {
 
         int currentY = 35;
         final int textPaddingLeft = 50;
-        final int optionPaddingLeft = textPaddingLeft + 10;
+        final int optionPaddingLeft = textPaddingLeft + 10; // 60
         final int baseLineSpacing = font.lineHeight + 7;
         final int extraEmptyLineHeight = font.lineHeight;
+
+        // 计算最大宽度
+        final int dialogTextMaxWidth = Math.max(1, this.width - textPaddingLeft - 20); // 20 右缩进
+        final int optionTextMaxWidth = Math.max(1, this.width - optionPaddingLeft - 20);
 
         int entriesToShow = Math.min(HISTORY_MAX_LINES_DISPLAYED, historyEntries.size());
 
@@ -669,29 +673,48 @@ public class DialogScreen extends Screen {
             Component dialogText = entry.getText();
             Component lineToRender;
 
-            // 确保 dialogText 不为 null，以防止在 append 时出现 NullPointerException
             if (dialogText == null) {
                 dialogText = Component.empty();
             }
 
             if (currentEntrySpeaker != null && !currentEntrySpeaker.getString().isEmpty()) {
-                // 使用 Component.literal
                 lineToRender = Component.literal("[").append(currentEntrySpeaker).append("] ").append(dialogText);
             } else {
                 lineToRender = dialogText;
             }
             
-            // 确保 lineToRender 不为 null 才进行绘制
             if (lineToRender != null) {
-                guiGraphics.drawString(font, lineToRender, textPaddingLeft, currentY, 0xFFFFFF);
+                List<net.minecraft.util.FormattedCharSequence> wrappedDialogLines = font.split(lineToRender, dialogTextMaxWidth);
+                if (wrappedDialogLines.isEmpty() && !lineToRender.getString().isEmpty()) {
+                    
+                    guiGraphics.drawString(font, lineToRender, textPaddingLeft, currentY, 0xFFFFFF);
+                    currentY += font.lineHeight + 2;
+                } else {
+                    for (net.minecraft.util.FormattedCharSequence line : wrappedDialogLines) {
+                        guiGraphics.drawString(font, line, textPaddingLeft, currentY, 0xFFFFFF);
+                        currentY += font.lineHeight + 2;
+                    }
+                }
+            } else {
+                 currentY += font.lineHeight + 2;
             }
-            currentY += baseLineSpacing;
+            currentY += 5;
 
             // 显示选择的选项
             if (entry.getSelectedOptionText() != null && !entry.getSelectedOptionText().isEmpty()) {
-                String selectedOptionDisplay = " -> " + entry.getSelectedOptionText();
-                guiGraphics.drawString(font, selectedOptionDisplay, optionPaddingLeft, currentY + 5, 0xAAAAAA);
-                currentY += baseLineSpacing;
+                Component optionComponent = Component.literal(" -> " + entry.getSelectedOptionText());
+                currentY += 5;
+
+                List<net.minecraft.util.FormattedCharSequence> wrappedOptionLines = font.split(optionComponent, optionTextMaxWidth);
+                if (wrappedOptionLines.isEmpty() && !optionComponent.getString().isEmpty()) {
+                    guiGraphics.drawString(font, optionComponent, optionPaddingLeft, currentY, 0xAAAAAA);
+                    currentY += font.lineHeight + 2;
+                } else {
+                    for (net.minecraft.util.FormattedCharSequence line : wrappedOptionLines) {
+                        guiGraphics.drawString(font, line, optionPaddingLeft, currentY, 0xAAAAAA);
+                        currentY += font.lineHeight + 2;
+                    }
+                }
                 currentY += extraEmptyLineHeight;
             }
         }

@@ -47,7 +47,7 @@ public class Dialog {
         LOGGER.info("对话框模组客户端设置初始化");
 
         // 客户端设置完成后加载对话数据
-        event.enqueueWork(() -> DialogManager.getInstance().loadDialogs(Minecraft.getInstance().getResourceManager(), true));
+        // event.enqueueWork(() -> DialogManager.getInstance().loadDialogs(Minecraft.getInstance().getResourceManager(), true)); // 已移除，对话将通过网络同步
     }
     
     private void registerKeyBindings(final RegisterKeyMappingsEvent event) {

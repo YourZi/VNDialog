@@ -5,7 +5,9 @@
   "dialog.command.show.success": "正在显示对话: %s",
   "dialog.command.show.player_only": "该命令只能由玩家执行",
   "dialog.command.reload.start": "正在重新加载对话文件...",
-  "dialog.command.reload.success": "对话文件重新加载完成",
+  "dialog.command.reload.success_server":"服务器已重新加载对话文件",
+  "dialog.command.reload.sync_sent_all": "已将对话同步至所有客户端",
+  "dialog.command.reload.no_dialogs_to_sync": "没有对话需要同步",
   "dialog.command.list.header": "可用的对话列表:",
   
   "dialog.ui.continue": "继续",

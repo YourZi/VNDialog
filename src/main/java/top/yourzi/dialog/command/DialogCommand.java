@@ -52,10 +52,9 @@ public class DialogCommand {
         CommandSourceStack source = context.getSource();
         
         if (source.getEntity() instanceof ServerPlayer player) {
-            // 向玩家发送网络包，在客户端显示对话
-            source.sendSuccess(() -> Component.literal("正在显示对话: " + dialogId), false);
-
-            // 使用 NetworkHandler 发送网络包到客户端
+            // 服务端通知客户端显示指定ID的对话
+            // 客户端的 DialogManager.showDialog 将从其缓存中查找对话
+            source.sendSuccess(() -> Component.literal("正在指示客户端显示对话: " + dialogId), false);
             top.yourzi.dialog.network.NetworkHandler.sendShowDialogToPlayer(player, dialogId);
             return 1;
         } else {
@@ -70,19 +69,26 @@ public class DialogCommand {
     private static int reloadDialogs(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         
-        // 服务器首先重新加载对话
-        DialogManager.getInstance().loadDialogs(source.getServer().getResourceManager(), false);
-        source.sendSuccess(() -> Component.translatable("dialog.command.reload.success"), false);
+        // 1. 服务器重新加载对话
+        Dialog.LOGGER.info("开始执行 /dialog reload 命令...");
+        DialogManager.getInstance().loadDialogsFromServer(source.getServer().getResourceManager());
+        source.sendSuccess(() -> Component.translatable("dialog.command.reload.success_server"), true); // Notify command executor
 
-        // 通知客户端重新加载对话
-        source.sendSuccess(() -> Component.translatable("dialog.command.reload.start"), false);
+        // 2. 获取所有对话的JSON数据
+        Map<String, String> allDialogJsons = DialogManager.getInstance().getAllDialogJsonsForSync();
 
-        // 如果是玩家执行的命令，则仅向该玩家发送网络包
-        if (source.getEntity() instanceof ServerPlayer player) {
-            top.yourzi.dialog.network.NetworkHandler.sendReloadDialogsToPlayer(player);
+        // 3. 向所有玩家同步新的对话数据
+        if (!allDialogJsons.isEmpty()) {
+            top.yourzi.dialog.network.NetworkHandler.sendAllDialogsToAllPlayers(allDialogJsons);
+            source.sendSuccess(() -> Component.translatable("dialog.command.reload.sync_sent_all", allDialogJsons.size()), true);
+            Dialog.LOGGER.info("已向所有客户端发送 {} 个对话数据进行同步。", allDialogJsons.size());
         } else {
-            // 如果是服务器执行的命令，则向所有玩家发送网络包
-            top.yourzi.dialog.network.NetworkHandler.sendReloadDialogsToAll();
+            source.sendSuccess(() -> Component.translatable("dialog.command.reload.no_dialogs_to_sync"), true);
+            Dialog.LOGGER.info("没有对话数据需要同步到客户端。");
+            // 即使没有对话，也可能需要通知客户端清空其缓存（如果之前有数据的话）
+            // 为此，可以发送一个空的 SyncAllDialogsPacket，或者客户端在收到空的map时清空
+            // 当前 SyncAllDialogsPacket 的客户端处理逻辑 (receiveAllDialogsFromServer) 已经包含清空操作
+            top.yourzi.dialog.network.NetworkHandler.sendAllDialogsToAllPlayers(new java.util.HashMap<>());
         }
         
         return 1;
