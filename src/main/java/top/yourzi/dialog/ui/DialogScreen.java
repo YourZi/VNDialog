@@ -31,7 +31,7 @@ import java.util.List;
  * 对话界面，用于显示对话框和立绘
  */
 public class DialogScreen extends Screen {
-    // 新增：内部类，用于存储每个立绘的显示数据
+    //存储每个立绘的显示数据
     private static class PortraitDisplayData {
         ResourceLocation resourceLocation;
         int actualWidth;
@@ -120,7 +120,7 @@ public class DialogScreen extends Screen {
     private boolean showingHistory = false;
     private int historyScrollOffset = 0;
     private List<DialogEntry> historyEntries = new ArrayList<>();
-    private static final int HISTORY_MAX_LINES_DISPLAYED = 20; // 历史记录界面一次显示的最大行数
+    private static final int HISTORY_MAX_LINES_DISPLAYED = 10; // 历史记录界面一次显示的最大行数
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
@@ -371,7 +371,7 @@ public class DialogScreen extends Screen {
                 guiGraphics.fill(dialogBoxX, dialogBoxY, dialogBoxX + dialogBoxWidth, dialogBoxY + dialogBoxHeight, color);
             }
         } else {
-            // 如果未指定图片路径，则回退到纯色背景
+
             int backgroundColor = Config.DIALOG_BACKGROUND_COLOR.get();
             int opacity = Config.DIALOG_BACKGROUND_OPACITY.get();
             int color = (opacity << 24) | (backgroundColor & 0xFFFFFF);
@@ -511,19 +511,6 @@ public class DialogScreen extends Screen {
                 toggleHistoryScreen();
                 return true;
             }
-            // 允许使用向上和向下箭头键滚动历史记录
-            if (keyCode == GLFW.GLFW_KEY_UP) {
-                historyScrollOffset = Math.max(0, historyScrollOffset - 1);
-                return true;
-            }
-            if (keyCode == GLFW.GLFW_KEY_DOWN) {
-                // 确保滚动不会超出历史记录的末尾
-                if (!historyEntries.isEmpty()) {
-                    int maxScroll = Math.max(0, historyEntries.size() - HISTORY_MAX_LINES_DISPLAYED);
-                    historyScrollOffset = Math.min(maxScroll, historyScrollOffset + 1);
-                }
-                return true;
-            }
             return false; // 其他按键在历史记录界面不处理
         }
 
@@ -539,12 +526,6 @@ public class DialogScreen extends Screen {
                 DialogManager.getInstance().executeCommand(dialogEntry.getCommand());
             }
             DialogManager.getInstance().showNextDialog();
-            return true;
-        }
-
-        // 按 H 键切换历史记录界面
-        if (keyCode == GLFW.GLFW_KEY_H) {
-            toggleHistoryScreen();
             return true;
         }
 
@@ -637,7 +618,6 @@ public class DialogScreen extends Screen {
     
         if (this.showingHistory) {
             this.historyEntries = DialogManager.getInstance().getDialogHistory();
-            this.historyScrollOffset = 0; // 重置滚动
             // 禁用主对话界面按钮
             this.optionButtons.forEach(b -> b.active = false);
             if (this.viewHistoryButton != null) { // 确保按钮已初始化
@@ -678,7 +658,7 @@ public class DialogScreen extends Screen {
         final int baseLineSpacing = font.lineHeight + 7;
         final int extraEmptyLineHeight = font.lineHeight;
 
-        int entriesToShow = Math.min(HISTORY_MAX_LINES_DISPLAYED, historyEntries.size() - historyScrollOffset);
+        int entriesToShow = Math.min(HISTORY_MAX_LINES_DISPLAYED, historyEntries.size());
 
         for (int i = 0; i < entriesToShow; i++) {
             int historyIndex = historyScrollOffset + i;
