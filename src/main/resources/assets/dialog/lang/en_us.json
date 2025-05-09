@@ -13,6 +13,10 @@
   "dialog.ui.continue": "Continue",
   "dialog.ui.back": "Back",
   "dialog.ui.exit": "Exit",
+  "dialog.ui.auto_play": "Auto Play",
+  "dialog.ui.history": "History",
+  "dialog.ui.esc": "Exit Dialog",
+  "dialog.ui.confirm_esc": "Are you sure you want to exit the current dialog?",
   
   "dialog.manager.loading": "Loading dialog files, path: %s",
   "dialog.manager.files_found": "Found %s dialog files",

@@ -7,10 +7,7 @@ import net.minecraftforge.fml.common.Mod;
 import top.yourzi.dialog.Dialog;
 import top.yourzi.dialog.DialogManager;
 import top.yourzi.dialog.network.NetworkHandler;
-
 import java.util.Map;
-
-// 新增导入
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;

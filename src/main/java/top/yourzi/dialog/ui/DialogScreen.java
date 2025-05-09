@@ -26,6 +26,7 @@ import java.io.IOException;
 import net.minecraft.client.gui.components.Button;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.gui.screens.ConfirmScreen; // Added import
 
 /**
  * 对话界面，用于显示对话框和立绘
@@ -124,6 +125,11 @@ public class DialogScreen extends Screen {
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
+
+    // 滚动条相关
+    private int totalHistoryContentHeight = 0;
+    private boolean canScrollHistoryDown = false;
+    private boolean canScrollHistoryUp = false;
 
     public DialogScreen(DialogSequence dialogSequence, DialogEntry dialogEntry) {
         super(dialogEntry.getSpeaker() != null ? dialogEntry.getSpeaker() : Component.empty());
@@ -501,27 +507,37 @@ public class DialogScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
+        // 首先处理ESC键的特定行为
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (this.showingHistory) {
+                // 如果在历史记录界面，ESC键返回对话界面
+                toggleHistoryScreen();
+                return true; // 事件已处理
+            } else {
+                // 如果在对话界面，ESC键弹出确认关闭的提示
+                this.minecraft.setScreen(new ConfirmScreen(
+                    this::confirmCloseDialog,
+                    Component.translatable("dialog.ui.esc"), // 确认框标题
+                    Component.translatable("dialog.ui.confirm_esc") // 确认框消息
+                ));
+                return true; // 事件已处理
+            }
         }
 
-        // 如果正在显示历史记录，则按键事件由历史记录界面处理
-        if (showingHistory) {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_H) {
-                toggleHistoryScreen();
-                return true;
-            }
-            return false; // 其他按键在历史记录界面不处理
+        // 如果正在显示历史记录界面 (并且按下的不是ESC)
+        if (this.showingHistory) {
+            // 对于历史记录界面的其他按键，不进行进一步处理
+            return false;
         }
+
+        // ---- 以下是在对话界面 (非历史记录界面) 且非ESC键的按键处理 ----
 
         // 当文本完全显示，且没有选项时，按空格键或回车键可以手动前进
         if (textFullyDisplayed && !dialogEntry.hasOptions() && (keyCode == GLFW.GLFW_KEY_SPACE || keyCode == GLFW.GLFW_KEY_ENTER)) {
-             // 如果按键，则关闭自动播放
             if (DialogManager.isAutoPlaying()) {
                 DialogManager.stopAutoPlay();
                 updateAutoPlayButtonText();
             }
-            // 执行当前对话条目的指令（如果存在）
             if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
                 DialogManager.getInstance().executeCommand(dialogEntry.getCommand());
             }
@@ -531,19 +547,32 @@ public class DialogScreen extends Screen {
 
         // 如果文本未完全显示，按空格或回车则立即显示全部文本
         if (!textFullyDisplayed && (keyCode == GLFW.GLFW_KEY_SPACE || keyCode == GLFW.GLFW_KEY_ENTER)) {
-            // 如果按键，则关闭自动播放
             if (DialogManager.isAutoPlaying()) {
                 DialogManager.stopAutoPlay();
                 updateAutoPlayButtonText();
             }
             textFullyDisplayed = true;
             currentCharIndex = dialogEntry.getText().getString().length();
-            lastCharTime = System.currentTimeMillis(); // 更新时间，以便自动播放计时器正确工作
+            lastCharTime = System.currentTimeMillis();
             return true;
         }
-        return false;
+
+        // 对于其他未处理的按键，调用父类的处理方法
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
-    
+
+    //处理关闭对话确认的回调方法
+    private void confirmCloseDialog(boolean confirmed) {
+        if (confirmed) {
+            this.onClose(); // 调用Screen的onClose方法，通常是关闭屏幕
+        } else {
+            // 如果用户选择“否”，则重新显示当前对话界面
+            if (this.minecraft != null) {
+                this.minecraft.setScreen(this);
+            }
+        }
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // 如果点击，则关闭自动播放
@@ -656,19 +685,62 @@ public class DialogScreen extends Screen {
         final int optionPaddingLeft = textPaddingLeft + 10; // 60
         final int baseLineSpacing = font.lineHeight + 7;
         final int extraEmptyLineHeight = font.lineHeight;
+        final int historyAreaTopY = (int) (this.height * 0.1);
+        final int historyAreaBottomY = this.height - 40; // 底部留出空间给关闭按钮等
+        final int historyAreaHeight = historyAreaBottomY - historyAreaTopY;
 
         // 计算最大宽度
-        final int dialogTextMaxWidth = Math.max(1, this.width - textPaddingLeft - 20); // 20 右缩进
-        final int optionTextMaxWidth = Math.max(1, this.width - optionPaddingLeft - 20);
+        final int dialogTextMaxWidth = Math.max(1, this.width - textPaddingLeft - 20 - 15); // 20 右缩进, 15 为滚动条宽度和间距
+        final int optionTextMaxWidth = Math.max(1, this.width - optionPaddingLeft - 20 - 15);
 
-        int entriesToShow = Math.min(HISTORY_MAX_LINES_DISPLAYED, historyEntries.size());
+        // 重新计算内容总高度
+        totalHistoryContentHeight = 0;
+        for (DialogEntry entry : historyEntries) {
+            Component currentEntrySpeaker = entry.getSpeaker();
+            Component dialogText = entry.getText();
+            Component lineToRender;
+            if (dialogText == null) dialogText = Component.empty();
+            if (currentEntrySpeaker != null && !currentEntrySpeaker.getString().isEmpty()) {
+                lineToRender = Component.literal("[").append(currentEntrySpeaker).append("] ").append(dialogText);
+            } else {
+                lineToRender = dialogText;
+            }
+            if (lineToRender != null) {
+                List<net.minecraft.util.FormattedCharSequence> wrappedDialogLines = font.split(lineToRender, dialogTextMaxWidth);
+                if (wrappedDialogLines.isEmpty() && !lineToRender.getString().isEmpty()) {
+                    totalHistoryContentHeight += font.lineHeight + 2;
+                } else {
+                    for (net.minecraft.util.FormattedCharSequence line : wrappedDialogLines) {
+                        totalHistoryContentHeight += font.lineHeight + 2;
+                    }
+                }
+            } else {
+                totalHistoryContentHeight += font.lineHeight + 2;
+            }
+            totalHistoryContentHeight += 5; // 条目间距
+            if (entry.getSelectedOptionText() != null && !entry.getSelectedOptionText().isEmpty()) {
+                Component optionComponent = Component.literal(" -> " + entry.getSelectedOptionText());
+                totalHistoryContentHeight += 5; // 选项前间距
+                List<net.minecraft.util.FormattedCharSequence> wrappedOptionLines = font.split(optionComponent, optionTextMaxWidth);
+                if (wrappedOptionLines.isEmpty() && !optionComponent.getString().isEmpty()) {
+                    totalHistoryContentHeight += font.lineHeight + 2;
+                } else {
+                    for (net.minecraft.util.FormattedCharSequence line : wrappedOptionLines) {
+                        totalHistoryContentHeight += font.lineHeight + 2;
+                    }
+                }
+                totalHistoryContentHeight += extraEmptyLineHeight; // 选项后间距
+            }
+        }
 
-        for (int i = 0; i < entriesToShow; i++) {
-            int historyIndex = historyScrollOffset + i;
-            
-            if (historyIndex >= historyEntries.size()) break; 
+        // 渲染实际可见内容
+        currentY = historyAreaTopY - historyScrollOffset; // 应用滚动偏移
 
-            DialogEntry entry = historyEntries.get(historyIndex);
+        for (DialogEntry entry : historyEntries) {
+            // 只渲染在可视区域内的条目
+            // 这是一个简化的边界检查，更精确的检查会更复杂
+            // 我们主要依赖滚动偏移来控制显示内容
+
             Component currentEntrySpeaker = entry.getSpeaker();
             Component dialogText = entry.getText();
             Component lineToRender;
@@ -683,55 +755,104 @@ public class DialogScreen extends Screen {
                 lineToRender = dialogText;
             }
             
+            int entryStartY = currentY;
+            int entryHeight = 0;
+
             if (lineToRender != null) {
                 List<net.minecraft.util.FormattedCharSequence> wrappedDialogLines = font.split(lineToRender, dialogTextMaxWidth);
                 if (wrappedDialogLines.isEmpty() && !lineToRender.getString().isEmpty()) {
-                    
-                    guiGraphics.drawString(font, lineToRender, textPaddingLeft, currentY, 0xFFFFFF);
+                    if (currentY + font.lineHeight > historyAreaTopY && currentY < historyAreaBottomY) {
+                        guiGraphics.drawString(font, lineToRender, textPaddingLeft, currentY, 0xFFFFFF);
+                    }
                     currentY += font.lineHeight + 2;
+                    entryHeight += font.lineHeight + 2;
                 } else {
                     for (net.minecraft.util.FormattedCharSequence line : wrappedDialogLines) {
-                        guiGraphics.drawString(font, line, textPaddingLeft, currentY, 0xFFFFFF);
+                        if (currentY + font.lineHeight > historyAreaTopY && currentY < historyAreaBottomY) {
+                            guiGraphics.drawString(font, line, textPaddingLeft, currentY, 0xFFFFFF);
+                        }
                         currentY += font.lineHeight + 2;
+                        entryHeight += font.lineHeight + 2;
                     }
                 }
             } else {
                  currentY += font.lineHeight + 2;
+                 entryHeight += font.lineHeight + 2;
             }
             currentY += 5;
+            entryHeight += 5;
 
             // 显示选择的选项
             if (entry.getSelectedOptionText() != null && !entry.getSelectedOptionText().isEmpty()) {
                 Component optionComponent = Component.literal(" -> " + entry.getSelectedOptionText());
                 currentY += 5;
+                entryHeight += 5;
 
                 List<net.minecraft.util.FormattedCharSequence> wrappedOptionLines = font.split(optionComponent, optionTextMaxWidth);
                 if (wrappedOptionLines.isEmpty() && !optionComponent.getString().isEmpty()) {
-                    guiGraphics.drawString(font, optionComponent, optionPaddingLeft, currentY, 0xAAAAAA);
+                    if (currentY + font.lineHeight > historyAreaTopY && currentY < historyAreaBottomY) {
+                        guiGraphics.drawString(font, optionComponent, optionPaddingLeft, currentY, 0xAAAAAA);
+                    }
                     currentY += font.lineHeight + 2;
+                    entryHeight += font.lineHeight + 2;
                 } else {
                     for (net.minecraft.util.FormattedCharSequence line : wrappedOptionLines) {
-                        guiGraphics.drawString(font, line, optionPaddingLeft, currentY, 0xAAAAAA);
+                        if (currentY + font.lineHeight > historyAreaTopY && currentY < historyAreaBottomY) {
+                            guiGraphics.drawString(font, line, optionPaddingLeft, currentY, 0xAAAAAA);
+                        }
                         currentY += font.lineHeight + 2;
+                        entryHeight += font.lineHeight + 2;
                     }
                 }
                 currentY += extraEmptyLineHeight;
+                entryHeight += extraEmptyLineHeight;
             }
+            // 如果条目的任何部分在可视区域之上，并且其结束部分在可视区域之下，则认为该条目是（部分）可见的
+            // 此处简化处理，主要依赖滚动
+        }
+
+        // 更新滚动状态
+        canScrollHistoryUp = historyScrollOffset > 0;
+        canScrollHistoryDown = totalHistoryContentHeight > historyAreaHeight && historyScrollOffset < (totalHistoryContentHeight - historyAreaHeight);
+
+        // 渲染滚动提示箭头 (向下)
+        if (canScrollHistoryDown) {
+            int arrowX = this.width / 2;
+            int arrowY = historyAreaBottomY + 5; // 在历史区域下方
+            guiGraphics.drawString(font, "▼", arrowX - font.width("▼") / 2, arrowY, 0xFFFFFF);
+        }
+        // 渲染滚动提示箭头 (向上)
+        if (canScrollHistoryUp) {
+            int arrowX = this.width / 2;
+            int arrowY = historyAreaTopY - font.lineHeight - 5; // 在历史区域上方
+            guiGraphics.drawString(font, "▲", arrowX - font.width("▲") / 2, arrowY, 0xFFFFFF);
+        }
+
+        // 渲染滚动条
+        if (totalHistoryContentHeight > historyAreaHeight) {
+            int scrollbarWidth = 8;
+            int scrollbarX = this.width - textPaddingLeft + 5; // 调整到文本区域右侧
+            int scrollbarTrackHeight = historyAreaHeight;
+            
+            // 滚动条背景
+            guiGraphics.fill(scrollbarX, historyAreaTopY, scrollbarX + scrollbarWidth, historyAreaTopY + scrollbarTrackHeight, 0xFF555555); 
+
+            float scrollPercentage = (float) historyScrollOffset / (totalHistoryContentHeight - historyAreaHeight);
+            int scrollThumbHeight = Math.max(20, (int) ((float) historyAreaHeight / totalHistoryContentHeight * historyAreaHeight));
+            int scrollThumbY = historyAreaTopY + (int) (scrollPercentage * (scrollbarTrackHeight - scrollThumbHeight));
+            
+            guiGraphics.fill(scrollbarX, scrollThumbY, scrollbarX + scrollbarWidth, scrollThumbY + scrollThumbHeight, 0xFFAAAAAA);
         }
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (showingHistory) {
-            if (delta < 0) { // 向下滚动
-                if (historyScrollOffset < historyEntries.size() - HISTORY_MAX_LINES_DISPLAYED) {
-                    historyScrollOffset++;
-                }
-            } else { // 向上滚动
-                if (historyScrollOffset > 0) {
-                    historyScrollOffset--;
-                }
-            }
+        if (this.showingHistory) {
+            int scrollAmount = (int) (-delta * (font.lineHeight + 2) * 2); // 每次滚动2行的高度
+            int newScrollOffset = this.historyScrollOffset + scrollAmount;
+            int maxScroll = Math.max(0, totalHistoryContentHeight - (this.height - 40 - (int) (this.height * 0.1)));
+
+            this.historyScrollOffset = Mth.clamp(newScrollOffset, 0, maxScroll);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, delta);
