@@ -13,7 +13,6 @@ import top.yourzi.dialog.model.DialogEntry;
 import top.yourzi.dialog.model.DialogSequence;
 import top.yourzi.dialog.ui.DialogScreen;
 import top.yourzi.dialog.network.NetworkHandler;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -50,8 +49,7 @@ public class DialogManager {
     @OnlyIn(Dist.CLIENT)
     private static boolean isAutoPlaying = false;
 
-    private DialogManager() {
-    }
+    private DialogManager() {}
     
     /**
      * 向玩家发送消息。
@@ -76,7 +74,7 @@ public class DialogManager {
     public void executeCommand(String command) {
         if (command != null && !command.isEmpty()) {
             Dialog.LOGGER.info("Client requesting server to execute command: {}", command);
-            // 将命令发送到服务器执行，而不是在客户端执行
+            // 将命令发送到服务器执行
             NetworkHandler.sendExecuteCommandToServer(command);
         }
     }
