@@ -727,7 +727,6 @@ public class DialogScreen extends Screen {
             totalHistoryContentHeight += 5; // 条目间距
             if (entry.getSelectedOptionText() != null && !entry.getSelectedOptionText().isEmpty()) {
                 Component optionComponent = Component.literal(" -> " + entry.getSelectedOptionText());
-                totalHistoryContentHeight += 5; // 选项前间距
                 List<net.minecraft.util.FormattedCharSequence> wrappedOptionLines = font.split(optionComponent, optionTextMaxWidth);
                 if (wrappedOptionLines.isEmpty() && !optionComponent.getString().isEmpty()) {
                     totalHistoryContentHeight += font.lineHeight + 2;
@@ -744,9 +743,7 @@ public class DialogScreen extends Screen {
         currentY = historyAreaTopY - historyScrollOffset; // 应用滚动偏移
 
         for (DialogEntry entry : historyEntries) {
-            // 只渲染在可视区域内的条目
-            // 这是一个简化的边界检查，更精确的检查会更复杂
-            // 我们主要依赖滚动偏移来控制显示内容
+
 
             Component currentEntrySpeaker = entry.getSpeaker();
             Component dialogText = entry.getText();
