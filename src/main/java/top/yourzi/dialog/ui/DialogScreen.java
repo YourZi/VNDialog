@@ -651,7 +651,7 @@ public class DialogScreen extends Screen {
         // 渲染背景
         guiGraphics.fill(0, 0, this.width, this.height, 0xCC000000); // 半透明黑色背景
 
-        int currentY = 35;
+        int currentY = (int) (this.height * 0.1);
         final int textPaddingLeft = 50;
         final int optionPaddingLeft = textPaddingLeft + 10; // 60
         final int baseLineSpacing = font.lineHeight + 7;

@@ -5,7 +5,9 @@
   "dialog.command.show.success": "Showing dialog: %s",
   "dialog.command.show.player_only": "This command can only be executed by a player",
   "dialog.command.reload.start": "Reloading dialog files...",
-  "dialog.command.reload.success": "Dialog files reloaded successfully",
+  "dialog.command.reload.success_server": "Dialog files reloaded successfully",
+  "dialog.command.reload.sync_sent_all": "Dialogs synchronized to all clients",
+  "dialog.command.reload.no_dialogs_to_sync": "No dialogs to synchronize",
   "dialog.command.list.header": "Available dialogs:",
   
   "dialog.ui.continue": "Continue",
