@@ -815,7 +815,6 @@ public class DialogScreen extends Screen {
                 entryHeight += extraEmptyLineHeight;
             }
             // 如果条目的任何部分在可视区域之上，并且其结束部分在可视区域之下，则认为该条目是（部分）可见的
-            // 此处简化处理，主要依赖滚动
         }
 
         // 更新滚动状态
