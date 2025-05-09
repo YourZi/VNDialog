@@ -120,7 +120,7 @@ public class DialogScreen extends Screen {
     private boolean showingHistory = false;
     private int historyScrollOffset = 0;
     private List<DialogEntry> historyEntries = new ArrayList<>();
-    private static final int HISTORY_MAX_LINES_DISPLAYED = 10; // 历史记录界面一次显示的最大行数
+    private static final int HISTORY_MAX_LINES_DISPLAYED = Config.MAX_HISTORY_LINES.get(); // 历史记录界面一次显示的最大行数
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
@@ -613,7 +613,6 @@ public class DialogScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        // 确保按钮状态实时更新，因为 DialogManager.isAutoPlaying() 可能在其他地方被修改
         updateAutoPlayButtonText(); 
     
         if (this.showingHistory) {
@@ -667,11 +666,25 @@ public class DialogScreen extends Screen {
 
             DialogEntry entry = historyEntries.get(historyIndex);
             Component currentEntrySpeaker = entry.getSpeaker();
-            String speaker = currentEntrySpeaker != null && !currentEntrySpeaker.getString().isEmpty() ? "[" + currentEntrySpeaker.getString() + "] " : "";
-            String text = speaker + entry.getText().getString();
+            Component dialogText = entry.getText();
+            Component lineToRender;
+
+            // 确保 dialogText 不为 null，以防止在 append 时出现 NullPointerException
+            if (dialogText == null) {
+                dialogText = Component.empty();
+            }
+
+            if (currentEntrySpeaker != null && !currentEntrySpeaker.getString().isEmpty()) {
+                // 使用 Component.literal
+                lineToRender = Component.literal("[").append(currentEntrySpeaker).append("] ").append(dialogText);
+            } else {
+                lineToRender = dialogText;
+            }
             
-            
-            guiGraphics.drawString(font, text, textPaddingLeft, currentY, 0xFFFFFF);
+            // 确保 lineToRender 不为 null 才进行绘制
+            if (lineToRender != null) {
+                guiGraphics.drawString(font, lineToRender, textPaddingLeft, currentY, 0xFFFFFF);
+            }
             currentY += baseLineSpacing;
 
             // 显示选择的选项

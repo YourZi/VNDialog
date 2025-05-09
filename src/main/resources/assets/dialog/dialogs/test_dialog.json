@@ -2,6 +2,7 @@
   "id": "test_dialog",
   "title": "Test Dialog",
   "description": "A test dialog sequence to showcase the features of the dialog system.",
+  "start": "start",
   "entries": [
     {
       "id": "start",
@@ -95,7 +96,7 @@
       "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
       "text": {"translate": "dialog.test_dialog.entry.8.text"},
       "portraits": [
-        {"path": "tlipoca.png", "animationType": "SLIDE_IN_FROM_BOTTOM"}
+        {"path": "tlipoca.png", "animationType": "FADE_IN"}
       ],
       "options": [
         {
@@ -149,6 +150,5 @@
         {"path": "tlipoca.png"}
       ]
     }
-  ],
-  "start": "start"
+  ]
 }
