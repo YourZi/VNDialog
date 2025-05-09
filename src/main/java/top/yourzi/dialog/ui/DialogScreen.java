@@ -837,8 +837,8 @@ public class DialogScreen extends Screen {
 
         // 渲染滚动条
         if (totalHistoryContentHeight > historyAreaHeight) {
-            int scrollbarWidth = 8;
-            int scrollbarX = this.width - textPaddingLeft + 5; // 调整到文本区域右侧
+            int scrollbarWidth = 5;
+            int scrollbarX = this.width - textPaddingLeft + 20; // 调整到文本区域右侧
             int scrollbarTrackHeight = historyAreaHeight;
             
             // 滚动条背景
