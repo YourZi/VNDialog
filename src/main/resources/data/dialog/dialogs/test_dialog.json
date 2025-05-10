@@ -142,13 +142,13 @@
         }
       ]
     },
-    {
-      "id": "end",
-      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
-      "text": {"translate": "dialog.test_dialog.entry.end.text"},
-      "portraits": [
-        {"path": "tlipoca.png"}
-      ]
-    }
+  {
+    "id": "end",
+    "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+    "text": {"translate": "dialog.test_dialog.entry.end.text"},
+    "portraits": [
+      {"path": "tlipoca.png"}
+    ]
+  }
   ]
 }
