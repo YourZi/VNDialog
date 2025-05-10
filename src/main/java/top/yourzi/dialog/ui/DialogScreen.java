@@ -689,8 +689,7 @@ public class DialogScreen extends Screen {
 
         int currentY = (int) (this.height * 0.1);
         final int textPaddingLeft = 50;
-        final int optionPaddingLeft = textPaddingLeft + 10; // 60
-        final int baseLineSpacing = font.lineHeight + 7;
+        final int optionPaddingLeft = textPaddingLeft + 5;
         final int extraEmptyLineHeight = font.lineHeight;
         final int historyAreaTopY = (int) (this.height * 0.1);
         final int historyAreaBottomY = this.height - 40; // 底部留出空间给关闭按钮等
