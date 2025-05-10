@@ -166,7 +166,7 @@
   - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该选项被选择后、跳转到 `target` 之前执行。
 
 ### 📝 示例：一个包含分支和立绘的对话
-- [点击跳转至示例文件](src/main/resources/assets/dialog/dialogs/test_dialog.json)
+- [点击跳转至示例文件](src/main/resources/data/dialog/dialogs/test_dialog.json)
 - 可以在游戏内使用`/dialog show test_dialog`来预览效果
 
 如果有使用翻译键，确保你的翻译键（如 `dialog.complex.title`）在对应的语言文件（例如 `assets/dialog/lang/zh_cn.json`）中有定义。
