@@ -17,7 +17,6 @@ import top.yourzi.dialog.model.PortraitAnimationType;
 import top.yourzi.dialog.model.PortraitPosition;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.Minecraft;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.Resource;
 
 import java.util.HashMap;
@@ -205,9 +204,6 @@ public class DialogScreen extends Screen {
                   autoPlayButtonWidth, autoPlayButtonHeight).build();
         this.addRenderableWidget(this.autoPlayButton);
         updateAutoPlayButtonText(); // 初始化按钮文本
-
-        // 初始化提交物品按钮 (如果需要)
-        createSubmitItemButton();
         
         // 如果此对话条目有选项，预先停止自动播放
         if (dialogEntry.hasOptions()) {
@@ -228,60 +224,6 @@ public class DialogScreen extends Screen {
     /**
      * 创建对话选项按钮
      */
-    private void createSubmitItemButton() {
-        if (dialogEntry.getSubmitItemInfo() != null) {
-            SubmitItemInfo submitInfo = dialogEntry.getSubmitItemInfo();
-            net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(submitInfo.getItemId()));
-            if (item == null || item == Items.AIR) {
-                Dialog.LOGGER.warn("Invalid item ID for submit item button: {}", submitInfo.getItemId());
-                return;
-            }
-            ItemStack itemStack = new ItemStack(item, submitInfo.getItemCount());
-            if (submitInfo.getItemNbt() != null && !submitInfo.getItemNbt().isEmpty()) {
-                try {
-                    CompoundTag nbt = TagParser.parseTag(submitInfo.getItemNbt());
-                    itemStack.setTag(nbt);
-                } catch (Exception e) {
-                    Dialog.LOGGER.warn("Invalid NBT for submit item button: {}. Error: {}", submitInfo.getItemNbt(), e.getMessage());
-                }
-            }
-
-            // 按钮将显示物品图标，位于对话框上方，居中
-            int buttonSize = 20;
-            int buttonX = dialogBoxX + (dialogBoxWidth / 2) - (buttonSize / 2);
-            int buttonY = dialogBoxY - buttonSize - 5; // 对话框上方5像素
-
-            this.submitItemButton = new Button.Builder(Component.empty(), (button) -> {
-                // 点击后弹出确认界面
-                this.minecraft.setScreen(new ConfirmScreen(
-                    yes -> {
-                        if (yes) {
-                            NetworkHandler.sendSubmitItemToServer(
-                                dialogEntry.getId(), 
-                                submitInfo.getItemId(), 
-                                submitInfo.getItemNbt(), 
-                                submitInfo.getItemCount()
-                            );
-                            // 提交后关闭当前对话界面，等待服务器响应
-                            this.onClose(); 
-                        }
-                        this.minecraft.setScreen(this); // 返回对话界面
-                    },
-                    Component.translatable("gui.vndialog.submit_item.confirm_title"),
-                    Component.translatable("gui.vndialog.submit_item.confirm_message", itemStack.getHoverName(), submitInfo.getItemCount())
-                ));
-            })
-            .bounds(buttonX, buttonY, buttonSize, buttonSize)
-            .tooltip(Tooltip.create(Component.translatable("gui.vndialog.submit_item.tooltip", itemStack.getHoverName(), submitInfo.getItemCount())))
-            .build();
-            
-            // 自定义按钮渲染以显示物品图标
-            this.submitItemButton.setMessage(Component.empty()); // 清空文本，我们将自己画图标
-
-            this.addRenderableWidget(this.submitItemButton);
-        }
-    }
-
     private void createOptionButtons() {
         optionButtons.clear();
         
@@ -519,8 +461,8 @@ public class DialogScreen extends Screen {
                 }
             }
 
-            // 如果自动播放开启，且文本完全显示，且没有选项，则延迟后自动前进
-            if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions()) {
+            // 如果自动播放开启，且文本完全显示，且没有选项，且没有提交物品需求，则延迟后自动前进
+            if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions() && dialogEntry.getSubmitItemInfo() == null) {
                 if (System.currentTimeMillis() - lastCharTime > Config.AUTO_ADVANCE_DELAY.get()) { // lastCharTime 在文本完全显示后更新
                     // 执行当前对话条目的指令（如果存在）
                     if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
@@ -694,7 +636,7 @@ public class DialogScreen extends Screen {
                     return true; // 消费点击事件
                 } else {
                     // 文本已完全显示
-                    if (!dialogEntry.hasOptions()) {
+                    if (!dialogEntry.hasOptions() && dialogEntry.getSubmitItemInfo() == null) { // 新增条件：没有提交物品需求
                         // 如果没有选项，则推进对话
                         // 执行当前对话条目的指令（如果存在）
                         if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
