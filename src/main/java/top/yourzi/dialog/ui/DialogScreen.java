@@ -18,15 +18,16 @@ import top.yourzi.dialog.model.PortraitPosition;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.resources.Resource;
+
+import java.util.HashMap;
 import java.util.Optional;
-import java.io.InputStream;
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import net.minecraft.client.gui.components.Button;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.screens.ConfirmScreen; // Added import
+import top.yourzi.dialog.util.STBBackendImage;
 
 /**
  * 对话界面，用于显示对话框和立绘
@@ -43,9 +44,11 @@ public class DialogScreen extends Screen {
         long animationStartTime = -1;
         boolean loadedSuccessfully = false;
 
+        private final static HashMap<ResourceLocation, BufferedImage> CACHED = new HashMap<>();
+
         PortraitDisplayData(String path, float brightness, PortraitPosition position, PortraitAnimationType animationType) {
             if (path != null && !path.isEmpty()) {
-                this.resourceLocation = new ResourceLocation(Dialog.MODID, "textures/portraits/" + path);
+                this.resourceLocation = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, String.format("textures/portraits/%s", path));
                 this.brightness = brightness;
                 this.position = position != null ? position : PortraitPosition.RIGHT; // 位置
                 this.animationType = animationType != null ? animationType : PortraitAnimationType.NONE; // 动画类型
@@ -60,31 +63,32 @@ public class DialogScreen extends Screen {
 
         private void loadDimensions() {
             if (this.resourceLocation == null) return;
-            try {
-                if (Minecraft.getInstance() != null && Minecraft.getInstance().getResourceManager() != null) {
+            var target_bufferedimage = CACHED.get(this.resourceLocation);
+            if (target_bufferedimage == null) {
+                try {
                     Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(this.resourceLocation);
                     if (resourceOptional.isPresent()) {
-                        try (InputStream inputStream = resourceOptional.get().open()) {
-                            BufferedImage image = ImageIO.read(inputStream);
-                            if (image != null) {
-                                this.actualWidth = image.getWidth();
-                                this.actualHeight = image.getHeight();
-                                this.loadedSuccessfully = true;
-                                Dialog.LOGGER.info("Loaded portrait {} with actual dimensions: {}x{}", this.resourceLocation, this.actualWidth, this.actualHeight);
-                            } else {
-                                Dialog.LOGGER.warn("Could not decode image for portrait: {}.", this.resourceLocation);
-                            }
+                        try (final var inputStream = resourceOptional.get().open()) {
+                            target_bufferedimage = STBBackendImage.read(inputStream);
+                            this.actualWidth = target_bufferedimage.getWidth();
+                            this.actualHeight = target_bufferedimage.getHeight();
+                            this.loadedSuccessfully = true;
+                            CACHED.put(this.resourceLocation, target_bufferedimage);
+                            Dialog.LOGGER.info("Loaded portrait {} with actual dimensions: {}x{}", this.resourceLocation, this.actualWidth, this.actualHeight);
                         }
                     } else {
                         Dialog.LOGGER.warn("Portrait resource not found: {}.", this.resourceLocation);
                     }
-                } else {
-                    Dialog.LOGGER.warn("Minecraft instance or ResourceManager not available for portrait loading.");
+                } catch (IOException e) {
+                    Dialog.LOGGER.error("Error reading portrait image {}: {}.", this.resourceLocation, e.getMessage());
+                } catch (Exception e) {
+                    Dialog.LOGGER.error("Unexpected error loading portrait image {}: {}.", this.resourceLocation, e.getMessage());
                 }
-            } catch (IOException e) {
-                Dialog.LOGGER.error("Error reading portrait image {}: {}.", this.resourceLocation, e.getMessage());
-            } catch (Exception e) {
-                Dialog.LOGGER.error("Unexpected error loading portrait image {}: {}.", this.resourceLocation, e.getMessage());
+            } else {
+                this.actualWidth = target_bufferedimage.getWidth();
+                this.actualHeight = target_bufferedimage.getHeight();
+                this.loadedSuccessfully = true;
+                Dialog.LOGGER.info("Loaded portrait {} from cache with dimensions: {}x{}", this.resourceLocation, this.actualWidth, this.actualHeight);
             }
         }
     }
@@ -354,7 +358,7 @@ public class DialogScreen extends Screen {
         String backgroundImagePath = "textures/dialog_background/background.png";
         if (backgroundImagePath != null && !backgroundImagePath.isEmpty()) {
             try {
-                ResourceLocation dialogBgRl = new ResourceLocation(top.yourzi.dialog.Dialog.MODID, backgroundImagePath);
+                ResourceLocation dialogBgRl = ResourceLocation.fromNamespaceAndPath(top.yourzi.dialog.Dialog.MODID, backgroundImagePath);
                 
                 RenderSystem.setShader(GameRenderer::getPositionTexShader); // 确保使用正确的着色器
                 RenderSystem.setShaderTexture(0, dialogBgRl); // 绑定纹理
