@@ -5,7 +5,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
 import top.yourzi.dialog.DialogManager;
-import top.yourzi.dialog.Dialog;
 import java.util.function.Supplier;
 
 /**
@@ -40,7 +39,6 @@ public class SendDialogDataPacket {
 
     @OnlyIn(Dist.CLIENT)
     private void handleOnClient() {
-        Dialog.LOGGER.info("Received dialog data for ID: {}", this.dialogId);
         DialogManager.getInstance().receiveDialogData(this.dialogId, this.dialogJson);
     }
 }

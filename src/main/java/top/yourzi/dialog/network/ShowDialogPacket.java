@@ -6,7 +6,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
-import top.yourzi.dialog.Dialog;
 import top.yourzi.dialog.DialogManager;
 
 /**
@@ -50,7 +49,6 @@ public class ShowDialogPacket {
      */
     @OnlyIn(Dist.CLIENT)
     private void handleOnClient() {
-        Dialog.LOGGER.info("收到显示对话的网络包: {}", dialogId);
         // 在客户端显示对话
         Minecraft.getInstance().execute(() -> {
             DialogManager.getInstance().showDialog(dialogId);

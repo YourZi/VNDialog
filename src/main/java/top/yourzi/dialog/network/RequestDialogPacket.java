@@ -35,7 +35,7 @@ public class RequestDialogPacket {
                 DialogSequence sequence = dialogManager.getDialogSequence(this.dialogId);
                 if (sequence != null) {
                     // 将DialogSequence序列化为JSON字符串
-                    Gson gson = new Gson(); // Ideally, use a shared Gson instance
+                    Gson gson = new Gson();
                     String dialogJson = gson.toJson(sequence);
                     // 发送包含对话数据的包回客户端
                     NetworkHandler.sendDialogDataToPlayer(sender, this.dialogId, dialogJson);

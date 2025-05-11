@@ -52,7 +52,6 @@ public class ExecuteServerCommandPacket {
             }
 
 
-            Dialog.LOGGER.info("Server received request to execute command: {}", command);
             CommandSourceStack commandSource = server.createCommandSourceStack()
                                                  .withPermission(Commands.LEVEL_GAMEMASTERS) 
                                                  .withSuppressedOutput(); 
@@ -62,7 +61,6 @@ public class ExecuteServerCommandPacket {
 
             try {
                 server.getCommands().performPrefixedCommand(commandSource, command);
-                Dialog.LOGGER.info("Command executed successfully by server: {}", command);
             } catch (Exception e) {
                 Dialog.LOGGER.error("Error executing command on server: {}", command, e);
             }
