@@ -14,25 +14,36 @@ public class DialogOption {
     // 选择此选项后跳转到的对话ID
     @SerializedName("target")
     private String targetId;
+
+    // 缓存的文本组件
+    private transient Component cachedTextComponent;
     
     public DialogOption() {
     }
     
     public Component getText() {
+        if (cachedTextComponent != null) {
+            return cachedTextComponent;
+        }
         if (text == null) {
-            return Component.empty();
+            cachedTextComponent = Component.empty();
+            return cachedTextComponent;
         }
         if (text.isJsonPrimitive() && text.getAsJsonPrimitive().isString()) {
-            return Component.literal(text.getAsString());
+            cachedTextComponent = Component.literal(text.getAsString());
+            return cachedTextComponent;
         }
         if (text.isJsonObject()) {
-            return Component.Serializer.fromJson(text);
+            cachedTextComponent = Component.Serializer.fromJson(text);
+            return cachedTextComponent;
         }
-        return Component.empty();
+        cachedTextComponent = Component.empty();
+        return cachedTextComponent;
     }
 
     public void setText(JsonElement text) {
         this.text = text;
+        this.cachedTextComponent = null; // 重置缓存
     }
     
     public String getTargetId() {

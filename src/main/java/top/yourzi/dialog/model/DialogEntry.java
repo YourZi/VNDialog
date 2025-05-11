@@ -29,19 +29,30 @@ public class DialogEntry {
     private String selectedOptionText;
     // 该对话条目完成后执行的命令
     private String command;
+
+    // 缓存的文本组件
+    private transient Component cachedTextComponent;
+    // 缓存的说话者组件
+    private transient Component cachedSpeakerComponent;
     
     public DialogEntry() {
     }
     
     public Component getText() {
+        if (cachedTextComponent != null) {
+            return cachedTextComponent;
+        }
         if (text == null) {
-            return Component.empty();
+            cachedTextComponent = Component.empty();
+            return cachedTextComponent;
         }
         if (text.isJsonPrimitive() && text.getAsJsonPrimitive().isString()) {
-            return Component.literal(text.getAsString());
+            cachedTextComponent = Component.literal(text.getAsString());
+            return cachedTextComponent;
         }
         if (text.isJsonObject()) {
-            return Component.Serializer.fromJson(text);
+            cachedTextComponent = Component.Serializer.fromJson(text);
+            return cachedTextComponent;
         }
         if (text.isJsonArray()) {
             MutableComponent combinedText = Component.empty();
@@ -56,30 +67,39 @@ public class DialogEntry {
                     }
                 }
             }
-            return combinedText;
+            cachedTextComponent = combinedText;
+            return cachedTextComponent;
         }
-        return Component.empty();
+        cachedTextComponent = Component.empty();
+        return cachedTextComponent;
     }
 
     public void setText(JsonElement text) {
         this.text = text;
+        this.cachedTextComponent = null; // 重置缓存
     }
 
     public Component getSpeaker() {
+        if (cachedSpeakerComponent != null) {
+            return cachedSpeakerComponent;
+        }
         if (speaker == null) {
             return null;
         }
         if (speaker.isJsonPrimitive() && speaker.getAsJsonPrimitive().isString()) {
-            return Component.literal(speaker.getAsString());
+            cachedSpeakerComponent = Component.literal(speaker.getAsString());
+            return cachedSpeakerComponent;
         }
         if (speaker.isJsonObject()) {
-            return Component.Serializer.fromJson(speaker);
+            cachedSpeakerComponent = Component.Serializer.fromJson(speaker);
+            return cachedSpeakerComponent;
         }
         return null;
     }
 
     public void setSpeaker(JsonElement speaker) {
         this.speaker = speaker;
+        this.cachedSpeakerComponent = null; // 重置缓存
     }
     
     public List<PortraitInfo> getPortraits() {
