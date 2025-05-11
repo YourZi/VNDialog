@@ -155,7 +155,7 @@ public class DialogScreen extends Screen {
                 }
             }
         } else {
-            Dialog.LOGGER.info("No portrait configurations found in DialogEntry or the list is empty.");
+            Dialog.LOGGER.warn("No portrait configurations found in DialogEntry or the list is empty.");
         }
 
         // 检查是否由快速跳过触发
@@ -434,14 +434,14 @@ public class DialogScreen extends Screen {
                 }
             }
 
-            // 如果自动播放开启，且文本完全显示，且没有选项，且没有提交物品需求，则延迟后自动前进
+            // 如果自动播放开启，且文本完全显示，且没有选项，则延迟后自动前进
             if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions()) {
                 if (System.currentTimeMillis() - lastCharTime > Config.AUTO_ADVANCE_DELAY.get()) { // lastCharTime 在文本完全显示后更新
-                    // 执行当前对话条目的指令（如果存在）
+                    DialogManager.getInstance().showNextDialog();
+                    // 执行当前对话条目的指令
                     if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
                         DialogManager.getInstance().executeCommand(this.getMinecraft().player, dialogEntry.getCommand());
                     }
-                    DialogManager.getInstance().showNextDialog();
                     return;
                 }
             }
@@ -532,16 +532,11 @@ public class DialogScreen extends Screen {
             }
         }
 
-        // 如果正在显示历史记录界面 (并且按下的不是ESC)
-        if (this.showingHistory) {
-            // 对于历史记录界面的其他按键，不进行进一步处理
-            return false;
-        }
+        // 处理其他键的通用行为
+        if (this.showingHistory) {return false;}
 
-        // ---- 以下是在对话界面 (非历史记录界面) 且非ESC键的按键处理 ----
-
-        // 当文本完全显示，且没有选项时，按空格键或回车键可以手动前进
-        if (textFullyDisplayed && !dialogEntry.hasOptions() && (keyCode == GLFW.GLFW_KEY_SPACE || keyCode == GLFW.GLFW_KEY_ENTER)) {
+        // 当文本完全显示，且没有选项时，按空格键可以手动前进
+        if (textFullyDisplayed && !dialogEntry.hasOptions() && (keyCode == GLFW.GLFW_KEY_SPACE)) {
             if (DialogManager.isAutoPlaying()) {
                 DialogManager.stopAutoPlay();
                 updateAutoPlayButtonText();
@@ -553,8 +548,8 @@ public class DialogScreen extends Screen {
             return true;
         }
 
-        // 如果文本未完全显示，按空格或回车则立即显示全部文本
-        if (!textFullyDisplayed && (keyCode == GLFW.GLFW_KEY_SPACE || keyCode == GLFW.GLFW_KEY_ENTER)) {
+        // 如果文本未完全显示，按空格则立即显示全部文本
+        if (!textFullyDisplayed && (keyCode == GLFW.GLFW_KEY_SPACE)) {
             if (DialogManager.isAutoPlaying()) {
                 DialogManager.stopAutoPlay();
                 updateAutoPlayButtonText();

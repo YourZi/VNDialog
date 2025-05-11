@@ -30,7 +30,6 @@ public class SyncAllDialogsPacket {
             buf.writeUtf(id);
             buf.writeUtf(json);
         });
-        Dialog.LOGGER.debug("编码 SyncAllDialogsPacket，包含 {} 个对话数据", dialogDataMap.size());
     }
 
     /**
@@ -44,7 +43,6 @@ public class SyncAllDialogsPacket {
             String json = buf.readUtf();
             dialogDataMap.put(id, json);
         }
-        Dialog.LOGGER.debug("解码 SyncAllDialogsPacket，包含 {} 个对话数据", dialogDataMap.size());
         return new SyncAllDialogsPacket(dialogDataMap);
     }
 
@@ -65,7 +63,6 @@ public class SyncAllDialogsPacket {
      */
     @OnlyIn(Dist.CLIENT)
     private void handleOnClient() {
-        Dialog.LOGGER.info("客户端收到 SyncAllDialogsPacket，准备同步 {} 个对话数据。", dialogDataMap.size());
         DialogManager.getInstance().receiveAllDialogsFromServer(this.dialogDataMap);
     }
 }

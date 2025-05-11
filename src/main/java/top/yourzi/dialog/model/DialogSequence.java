@@ -18,8 +18,7 @@ public class DialogSequence {
     @SerializedName("start")
     private String startId;
     
-    public DialogSequence() {
-    }
+    public DialogSequence() {}
     
     public String getId() {
         return id;

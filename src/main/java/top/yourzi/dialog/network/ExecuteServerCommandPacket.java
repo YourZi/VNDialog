@@ -54,7 +54,7 @@ public class ExecuteServerCommandPacket {
 
             // 以玩家身份创建命令源，并赋予OP权限（等级2）
             CommandSourceStack commandSource = sender.createCommandSourceStack()
-                                                 .withPermission(Commands.LEVEL_GAMEMASTERS) // Commands.LEVEL_GAMEMASTERS 通常是权限等级 2
+                                                 .withPermission(Commands.LEVEL_GAMEMASTERS)
                                                  .withSuppressedOutput();
 
             try {
