@@ -85,9 +85,6 @@ public class DialogCommand {
         } else {
             source.sendSuccess(() -> Component.translatable("dialog.command.reload.no_dialogs_to_sync"), true);
             Dialog.LOGGER.info("没有对话数据需要同步到客户端。");
-            // 即使没有对话，也可能需要通知客户端清空其缓存（如果之前有数据的话）
-            // 为此，可以发送一个空的 SyncAllDialogsPacket，或者客户端在收到空的map时清空
-            // 当前 SyncAllDialogsPacket 的客户端处理逻辑 (receiveAllDialogsFromServer) 已经包含清空操作
             top.yourzi.dialog.network.NetworkHandler.sendAllDialogsToAllPlayers(new java.util.HashMap<>());
         }
         
