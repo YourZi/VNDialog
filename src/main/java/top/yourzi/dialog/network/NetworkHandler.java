@@ -69,12 +69,12 @@ public class NetworkHandler {
                 SyncAllDialogsPacket::decode,
                 SyncAllDialogsPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-
-        // 注册从客户端到服务端的执行命令包
-        INSTANCE.registerMessage(6, ExecuteServerCommandPacket.class, // 新的ID
-                ExecuteServerCommandPacket::encode,
-                ExecuteServerCommandPacket::decode,
-                ExecuteServerCommandPacket::handle,
+                
+        // 注册从客户端到服务端的提交物品包
+        INSTANCE.registerMessage(7, SubmitItemPacket.class, // 新的ID
+                SubmitItemPacket::encode,
+                SubmitItemPacket::decode,
+                SubmitItemPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
         
         Dialog.LOGGER.info("网络包处理器初始化完成");
@@ -145,14 +145,14 @@ public class NetworkHandler {
     }
 
     /**
-     * 客户端向服务端发送执行命令请求的网络包
+     * 客户端向服务端发送提交物品请求的网络包
      */
-    public static void sendExecuteCommandToServer(String command) {
+    public static void sendSubmitItemToServer(String dialogId, String itemId, String itemNbt, int itemCount) {
         if (Minecraft.getInstance() != null && Minecraft.getInstance().getConnection() != null) {
-            INSTANCE.sendToServer(new ExecuteServerCommandPacket(command));
-            Dialog.LOGGER.info("Sent request to execute command on server: {}", command);
+            INSTANCE.sendToServer(new SubmitItemPacket(dialogId, itemId, itemNbt, itemCount));
+            Dialog.LOGGER.info("Sent request to submit item for dialog '{}': item '{}', nbt '{}', count {}", dialogId, itemId, itemNbt, itemCount);
         } else {
-            Dialog.LOGGER.warn("Cannot send ExecuteServerCommandPacket: not on client or no connection.");
+            Dialog.LOGGER.warn("Cannot send SubmitItemPacket: not on client or no connection.");
         }
     }
 }

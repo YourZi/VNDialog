@@ -30,12 +30,24 @@ public class DialogEntry {
     // 该对话条目完成后执行的命令
     private String command;
 
+    // 提交物品的信息
+    @SerializedName("submit_item")
+    private SubmitItemInfo submitItemInfo;
+
     // 缓存的文本组件
     private transient Component cachedTextComponent;
     // 缓存的说话者组件
     private transient Component cachedSpeakerComponent;
     
     public DialogEntry() {
+    }
+
+    public SubmitItemInfo getSubmitItemInfo() {
+        return submitItemInfo;
+    }
+
+    public void setSubmitItemInfo(SubmitItemInfo submitItemInfo) {
+        this.submitItemInfo = submitItemInfo;
     }
     
     public Component getText() {

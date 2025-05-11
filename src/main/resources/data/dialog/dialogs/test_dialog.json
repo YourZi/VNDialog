@@ -118,6 +118,17 @@
       ]
     },
     {
+      "id": "unique_dialog_entry_id",
+      "text": "你需要给我一个钻石来继续。",
+      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+      "submit_item": {
+        "item_id": "minecraft:diamond",
+        "item_count": 1,
+        "target_dialog_id": "dialog_after_submission",
+        "command": "/say 玩家提交了钻石！"
+      }
+    },
+    {
       "id": "command",
       "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
       "text": {"translate": "dialog.test_dialog.entry.command.text"},
