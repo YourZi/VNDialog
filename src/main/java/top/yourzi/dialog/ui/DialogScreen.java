@@ -26,15 +26,8 @@ import java.io.IOException;
 import net.minecraft.client.gui.components.Button;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.screens.ConfirmScreen; // Added import
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import top.yourzi.dialog.util.STBBackendImage;
-import top.yourzi.dialog.model.SubmitItemInfo;
-import top.yourzi.dialog.network.NetworkHandler;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.nbt.TagParser;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.client.gui.components.Tooltip;
 
 /**
  * 对话界面，用于显示对话框和立绘
@@ -133,7 +126,6 @@ public class DialogScreen extends Screen {
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
-    private Button submitItemButton; // 提交物品按钮
 
     // 滚动条相关
     private int totalHistoryContentHeight = 0;
@@ -272,25 +264,6 @@ public class DialogScreen extends Screen {
             // 渲染历史记录界面的关闭按钮
             this.closeHistoryButton.render(guiGraphics, mouseX, mouseY, partialTicks);
             return; // 不渲染对话框和立绘
-        }
-
-        // 渲染提交物品按钮的图标 (如果存在且是Button实例)
-        if (this.submitItemButton != null && dialogEntry.getSubmitItemInfo() != null) {
-            SubmitItemInfo submitInfo = dialogEntry.getSubmitItemInfo();
-            net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(submitInfo.getItemId()));
-            if (item != null && item != Items.AIR) {
-                ItemStack itemStack = new ItemStack(item, 1); // 数量为1用于显示
-                 if (submitInfo.getItemNbt() != null && !submitInfo.getItemNbt().isEmpty()) {
-                    try {
-                        CompoundTag nbt = TagParser.parseTag(submitInfo.getItemNbt());
-                        itemStack.setTag(nbt);
-                    } catch (Exception e) { /* NBT解析失败则不设置 */ }
-                }
-                // 在按钮中心渲染物品图标
-                int iconX = this.submitItemButton.getX() + (this.submitItemButton.getWidth() - 16) / 2;
-                int iconY = this.submitItemButton.getY() + (this.submitItemButton.getHeight() - 16) / 2;
-                guiGraphics.renderFakeItem(itemStack, iconX, iconY);
-            }
         }
 
         // 渲染立绘
@@ -462,7 +435,7 @@ public class DialogScreen extends Screen {
             }
 
             // 如果自动播放开启，且文本完全显示，且没有选项，且没有提交物品需求，则延迟后自动前进
-            if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions() && dialogEntry.getSubmitItemInfo() == null) {
+            if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions()) {
                 if (System.currentTimeMillis() - lastCharTime > Config.AUTO_ADVANCE_DELAY.get()) { // lastCharTime 在文本完全显示后更新
                     // 执行当前对话条目的指令（如果存在）
                     if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
@@ -636,7 +609,7 @@ public class DialogScreen extends Screen {
                     return true; // 消费点击事件
                 } else {
                     // 文本已完全显示
-                    if (!dialogEntry.hasOptions() && dialogEntry.getSubmitItemInfo() == null) { // 新增条件：没有提交物品需求
+                    if (!dialogEntry.hasOptions()) {
                         // 如果没有选项，则推进对话
                         // 执行当前对话条目的指令（如果存在）
                         if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {

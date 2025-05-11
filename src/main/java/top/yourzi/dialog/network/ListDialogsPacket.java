@@ -10,7 +10,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraft.network.FriendlyByteBuf;
 import top.yourzi.dialog.Dialog;
-import top.yourzi.dialog.DialogManager;
 
 /**
  * 列出所有对话的网络包
