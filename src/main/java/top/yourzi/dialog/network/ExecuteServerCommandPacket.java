@@ -52,12 +52,10 @@ public class ExecuteServerCommandPacket {
             }
 
 
-            CommandSourceStack commandSource = server.createCommandSourceStack()
-                                                 .withPermission(Commands.LEVEL_GAMEMASTERS) 
-                                                 .withSuppressedOutput(); 
-
-            // 设置命令源的位置和旋转角度为触发者的
-            commandSource = commandSource.withPosition(sender.position()).withRotation(sender.getRotationVector());
+            // 以玩家身份创建命令源，并赋予OP权限（等级2）
+            CommandSourceStack commandSource = sender.createCommandSourceStack()
+                                                 .withPermission(Commands.LEVEL_GAMEMASTERS) // Commands.LEVEL_GAMEMASTERS 通常是权限等级 2
+                                                 .withSuppressedOutput();
 
             try {
                 server.getCommands().performPrefixedCommand(commandSource, command);
