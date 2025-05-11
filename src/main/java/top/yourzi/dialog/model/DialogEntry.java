@@ -1,8 +1,11 @@
 package top.yourzi.dialog.model;
 
+import java.util.List;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
  * 表示单条对话的数据模型。
@@ -14,9 +17,7 @@ public class DialogEntry {
     private JsonElement speaker;
     // 立绘信息列表
     @SerializedName("portraits")
-    private java.util.List<PortraitInfo> portraits;
-    // 背景图片路径
-    private String background;
+    private List<PortraitInfo> portraits;
     // 对话ID，用于跳转
     private String id;
     // 下一条对话的ID，如果为空则按顺序显示下一条
@@ -43,9 +44,9 @@ public class DialogEntry {
             return Component.Serializer.fromJson(text);
         }
         if (text.isJsonArray()) {
-            net.minecraft.network.chat.MutableComponent combinedText = Component.empty();
-            com.google.gson.JsonArray jsonArray = text.getAsJsonArray();
-            for (com.google.gson.JsonElement element : jsonArray) {
+            MutableComponent combinedText = Component.empty();
+            JsonArray jsonArray = text.getAsJsonArray();
+            for (JsonElement element : jsonArray) {
                 if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
                     combinedText.append(Component.literal(element.getAsString()));
                 } else if (element.isJsonObject()) {
@@ -66,7 +67,7 @@ public class DialogEntry {
 
     public Component getSpeaker() {
         if (speaker == null) {
-            return null; // 或 Component.empty(), 具体取决于业务逻辑
+            return null;
         }
         if (speaker.isJsonPrimitive() && speaker.getAsJsonPrimitive().isString()) {
             return Component.literal(speaker.getAsString());
@@ -74,18 +75,18 @@ public class DialogEntry {
         if (speaker.isJsonObject()) {
             return Component.Serializer.fromJson(speaker);
         }
-        return null; // 或 Component.empty()
+        return null;
     }
 
     public void setSpeaker(JsonElement speaker) {
         this.speaker = speaker;
     }
     
-    public java.util.List<PortraitInfo> getPortraits() {
+    public List<PortraitInfo> getPortraits() {
         return portraits;
     }
 
-    public void setPortraits(java.util.List<PortraitInfo> portraits) {
+    public void setPortraits(List<PortraitInfo> portraits) {
         this.portraits = portraits;
     }
     
@@ -131,13 +132,5 @@ public class DialogEntry {
 
     public void setCommand(String command) {
         this.command = command;
-    }
-
-    public String getBackground() {
-        return background;
-    }
-
-    public void setBackground(String background) {
-        this.background = background;
     }
 }

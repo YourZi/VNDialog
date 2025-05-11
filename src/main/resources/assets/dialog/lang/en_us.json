@@ -18,7 +18,7 @@
   "dialog.ui.esc": "Exit Dialog",
   "dialog.ui.confirm_esc": "Are you sure you want to exit the current dialog?",
   
-    "dialog.manager.requesting_from_server": "Requesting dialog files from server...",
+  "dialog.manager.requesting_from_server": "Requesting dialog files from server...",
   "dialog.manager.loading": "Loading dialog files, path: %s",
   "dialog.manager.files_found": "Found %s dialog files",
   "dialog.manager.sequence_loaded": "Successfully loaded dialog sequence: %s",

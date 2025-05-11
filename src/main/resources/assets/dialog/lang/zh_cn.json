@@ -17,6 +17,7 @@
   "dialog.ui.history": "历史记录",
   "dialog.ui.esc": "关闭对话",
   "dialog.ui.confirm_esc": "您确定要退出当前对话吗？",
+    "vndialog.ui.submit_item": "提交物品",
   
   "dialog.manager.requesting_from_server": "本地未找到对话文件，正在试图从服务器请求...",
   "dialog.manager.loading": "正在加载对话文件，路径: %s",
