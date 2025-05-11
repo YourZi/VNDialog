@@ -77,21 +77,17 @@ public class DialogManager {
      */
     public void loadDialogsFromServer(ResourceManager resourceManager) {
         dialogSequences.clear();
-        Dialog.LOGGER.info("The server is loading the dialog file from the datapack......");
 
         Map<ResourceLocation, Resource> modSpecificResources = resourceManager.listResources("dialogs", resource -> resource.getPath().endsWith(".json")).entrySet().stream()
             .filter(entry -> entry.getKey().getNamespace().equals(Dialog.MODID))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        Dialog.LOGGER.info("Find {} JSON file in the directory", modSpecificResources.size());
 
         modSpecificResources.forEach((resourceLocation, resource) -> {
-            Dialog.LOGGER.info("Dialog files being processed. {}", resourceLocation);
             try {
                 DialogSequence sequence = parseDialogSequenceFromFile(resource); // 解析对话序列
                 if (sequence != null && sequence.getId() != null) {
                     dialogSequences.put(sequence.getId(), sequence);
-                    Dialog.LOGGER.info("Successfully loaded dialog sequence. {}", sequence.getId());
                 } else {
                     Dialog.LOGGER.warn("Empty dialog sequence or empty ID. {}", resourceLocation);
                 }
@@ -100,7 +96,6 @@ public class DialogManager {
             }
         });
 
-        Dialog.LOGGER.info("The server loaded a total of {} dialog sequences", dialogSequences.size());
         if (dialogSequences.isEmpty()) {
             Dialog.LOGGER.warn("No dialog sequence was found, please check the 'dialogs' directory ('data/{}/dialogs') or file format in the datapack.", Dialog.MODID);
         }
@@ -142,7 +137,6 @@ public class DialogManager {
         currentSequence = null;
         currentEntry = null;
         clearDialogHistory();
-        Dialog.LOGGER.info("The client dialog cache has been cleared.");
     }
 
     /**
@@ -153,7 +147,6 @@ public class DialogManager {
     public void receiveAllDialogsFromServer(Map<String, String> dialogDataMap) {
         if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
         clearAllDialogsOnClient(); // 先清空旧数据
-        Dialog.LOGGER.info("The client receives {} conversation data for synchronization.", dialogDataMap.size());
         dialogDataMap.forEach((id, json) -> {
             try {
                 DialogSequence sequence = GSON.fromJson(json, DialogSequence.class);
@@ -171,7 +164,6 @@ public class DialogManager {
                 Dialog.LOGGER.debug("(ID: {}): {}", id, json, e);
             }
         });
-        Dialog.LOGGER.info("Client conversation data synchronization is complete, currently caching {} conversations.", dialogSequences.size());
         if (dialogSequences.isEmpty() && !dialogDataMap.isEmpty()) {
             Dialog.LOGGER.warn("Dialog data has been received but the cache is empty after parsing, please check the JSON format and content.");
         }
@@ -266,12 +258,10 @@ public class DialogManager {
     @OnlyIn(Dist.CLIENT)
     public void receiveDialogData(String dialogId, String dialogJson) {
         if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
-        Dialog.LOGGER.info("Client receives dialog data: {}", dialogId);
         try {
             DialogSequence sequence = GSON.fromJson(dialogJson, DialogSequence.class);
             if (sequence != null && sequence.getId() != null) {
                 dialogSequences.put(sequence.getId(), sequence);
-                Dialog.LOGGER.info("Successfully parsing and storing conversations received from the server side: {}", sequence.getId());
                 // 确保在主线程显示对话界面
                 Minecraft.getInstance().execute(() -> showDialog(dialogId)); // Now show the dialog
             } else {
@@ -294,7 +284,6 @@ public class DialogManager {
         stopAutoPlay(); // 每次对话启动时重置自动播放为关闭状态
         DialogSequence sequence = getDialogSequence(dialogId);
         if (sequence == null) {
-            Dialog.LOGGER.info("Dialog '{}' was not found locally and is being requested from the server...", dialogId);
             NetworkHandler.sendRequestDialogToServer(dialogId);
             sendPlayerMessage(Component.translatable("dialog.manager.requesting_from_server", dialogId));
             return;
@@ -457,8 +446,6 @@ public class DialogManager {
     private DialogSequence getDialogSequenceForPlayer(ServerPlayer player, String dialogId) {
         DialogSequence sequence = dialogSequences.get(dialogId);
         if (sequence != null) return sequence;
-
-        // 尝试查找包含此dialogId的序列
         for (DialogSequence seq : dialogSequences.values()) {
             if (seq.findEntryById(dialogId) != null) {
                 return seq;
@@ -471,11 +458,16 @@ public class DialogManager {
      * (服务端) 在服务器上代表玩家执行命令。
      */
     public void executeCommand(Player player, String command) {
+<<<<<<< HEAD
         if (player.getServer() != null) {
             player.getServer().getCommands().performPrefixedCommand(
                 player.createCommandSourceStack().withPermission(2),
                 command
             );
+=======
+        if (command != null && !command.isEmpty()) {
+            NetworkHandler.sendExecuteCommandToServer(command);
+>>>>>>> 270cb6d (移除冗余的日志输出)
         }
     }
 
