@@ -10,7 +10,7 @@ import top.yourzi.dialog.Dialog;
 
 import java.util.List;
 import java.util.Optional;
-import net.minecraft.client.Minecraft; // Required for client-side packet sending
+import net.minecraft.client.Minecraft;
 
 /**
  * 网络包处理器，用于服务端和客户端之间的通信
@@ -112,8 +112,6 @@ public class NetworkHandler {
      * 客户端向服务端发送请求特定对话数据的网络包
      */
     public static void sendRequestDialogToServer(String dialogId) {
-        // This method should be called from the client side.
-        // Ensure Minecraft.getInstance().getConnection() is not null if on client
         if (Minecraft.getInstance() != null && Minecraft.getInstance().getConnection() != null) {
             INSTANCE.sendToServer(new RequestDialogPacket(dialogId));
             Dialog.LOGGER.info("Sent request for dialog '{}' to server.", dialogId);

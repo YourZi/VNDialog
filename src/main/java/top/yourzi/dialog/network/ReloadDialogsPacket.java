@@ -23,7 +23,6 @@ public class ReloadDialogsPacket {
      * 将包数据编码到字节缓冲区
      */
     public void encode(FriendlyByteBuf buf) {
-        // 这个包不需要传递额外数据
     }
     
     /**

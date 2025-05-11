@@ -1,8 +1,6 @@
 package top.yourzi.dialog.network;
 
-import java.util.Optional;
 import java.util.function.Supplier;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;

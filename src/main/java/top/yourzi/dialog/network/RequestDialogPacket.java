@@ -40,8 +40,6 @@ public class RequestDialogPacket {
                     // 发送包含对话数据的包回客户端
                     NetworkHandler.sendDialogDataToPlayer(sender, this.dialogId, dialogJson);
                 } else {
-                    // Optionally, send a response indicating the dialog was not found on the server
-                    // For now, we'll just log it.
                     top.yourzi.dialog.Dialog.LOGGER.warn("Player {} requested dialog '{}' which was not found on the server.", sender.getName().getString(), this.dialogId);
                 }
             }

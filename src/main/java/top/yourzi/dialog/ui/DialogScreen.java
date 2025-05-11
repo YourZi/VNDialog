@@ -367,7 +367,6 @@ public class DialogScreen extends Screen {
                 RenderSystem.defaultBlendFunc(); // 使用默认混合函数
 
                 // 将图片拉伸至对话框大小进行渲染
-                // blit(texture, x, y, zLevel, uOffset, vOffset, widthOnScreen, heightOnScreen, textureRegionWidth, textureRegionHeight)
                 guiGraphics.blit(dialogBgRl, dialogBoxX, dialogBoxY, 0, 0.0F, 0.0F, dialogBoxWidth, dialogBoxHeight, dialogBoxWidth, dialogBoxHeight);
                 
                 RenderSystem.disableBlend(); // 绘制完毕后禁用混合
@@ -621,10 +620,6 @@ public class DialogScreen extends Screen {
                         DialogManager.getInstance().showNextDialog();
                         return true; // 消费点击事件
                     }
-                    // 如果有选项，此点击不是用于推进对话。
-                    // 选项按钮的点击由 super.mouseClicked 处理。
-                    // 如果是对话框内的点击但未在选项按钮上，
-                    // 并且文本已完全显示且存在选项，则此处不执行任何操作。
                 }
             }
         }

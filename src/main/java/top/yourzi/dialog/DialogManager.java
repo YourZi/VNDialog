@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.Collections; // Added for client-side check
+import java.util.Collections;
 
 /**
  * 对话系统的核心管理类，负责加载和管理对话序列。
