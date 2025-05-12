@@ -15,9 +15,10 @@ import top.yourzi.dialog.model.DialogOption;
 import top.yourzi.dialog.model.DialogSequence;
 import top.yourzi.dialog.model.PortraitAnimationType;
 import top.yourzi.dialog.model.PortraitPosition;
+
+import org.antlr.v4.parse.ANTLRParser.parserRule_return;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.Minecraft;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.Resource;
 
 import java.util.HashMap;
@@ -27,15 +28,8 @@ import java.io.IOException;
 import net.minecraft.client.gui.components.Button;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.screens.ConfirmScreen; // Added import
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import top.yourzi.dialog.util.STBBackendImage;
-import top.yourzi.dialog.model.SubmitItemInfo;
-import top.yourzi.dialog.network.NetworkHandler;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.nbt.TagParser;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.client.gui.components.Tooltip;
 
 /**
  * 对话界面，用于显示对话框和立绘
@@ -112,6 +106,8 @@ public class DialogScreen extends Screen {
     // 选项按钮列表
     private final List<OptionButton> optionButtons = new ArrayList<>();
 
+    // 玩家名称
+    private final String playerName;
 
     //立绘数据列表
     private final List<PortraitDisplayData> portraitDisplayList = new ArrayList<>();
@@ -134,17 +130,18 @@ public class DialogScreen extends Screen {
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
-    private Button submitItemButton; // 提交物品按钮
 
     // 滚动条相关
     private int totalHistoryContentHeight = 0;
     private boolean canScrollHistoryDown = false;
     private boolean canScrollHistoryUp = false;
 
-    public DialogScreen(DialogSequence dialogSequence, DialogEntry dialogEntry) {
-        super(dialogEntry.getSpeaker() != null ? dialogEntry.getSpeaker() : Component.empty());
+    public DialogScreen(DialogSequence dialogSequence, DialogEntry dialogEntry, String playerName) {
+        super(dialogEntry.getSpeaker(playerName) != null ? dialogEntry.getSpeaker(playerName) : Component.empty());
         this.dialogSequence = dialogSequence;
         this.dialogEntry = dialogEntry;
+        this.playerName = playerName;
+        this.font = Minecraft.getInstance().font;
 
         // 加载多个立绘资源
         if (dialogEntry.getPortraits() != null && !dialogEntry.getPortraits().isEmpty()) {
@@ -205,9 +202,6 @@ public class DialogScreen extends Screen {
                   autoPlayButtonWidth, autoPlayButtonHeight).build();
         this.addRenderableWidget(this.autoPlayButton);
         updateAutoPlayButtonText(); // 初始化按钮文本
-
-        // 初始化提交物品按钮 (如果需要)
-        createSubmitItemButton();
         
         // 如果此对话条目有选项，预先停止自动播放
         if (dialogEntry.hasOptions()) {
@@ -228,60 +222,6 @@ public class DialogScreen extends Screen {
     /**
      * 创建对话选项按钮
      */
-    private void createSubmitItemButton() {
-        if (dialogEntry.getSubmitItemInfo() != null) {
-            SubmitItemInfo submitInfo = dialogEntry.getSubmitItemInfo();
-            net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(submitInfo.getItemId()));
-            if (item == null || item == Items.AIR) {
-                Dialog.LOGGER.warn("Invalid item ID for submit item button: {}", submitInfo.getItemId());
-                return;
-            }
-            ItemStack itemStack = new ItemStack(item, submitInfo.getItemCount());
-            if (submitInfo.getItemNbt() != null && !submitInfo.getItemNbt().isEmpty()) {
-                try {
-                    CompoundTag nbt = TagParser.parseTag(submitInfo.getItemNbt());
-                    itemStack.setTag(nbt);
-                } catch (Exception e) {
-                    Dialog.LOGGER.warn("Invalid NBT for submit item button: {}. Error: {}", submitInfo.getItemNbt(), e.getMessage());
-                }
-            }
-
-            // 按钮将显示物品图标，位于对话框上方，居中
-            int buttonSize = 20;
-            int buttonX = dialogBoxX + (dialogBoxWidth / 2) - (buttonSize / 2);
-            int buttonY = dialogBoxY - buttonSize - 5; // 对话框上方5像素
-
-            this.submitItemButton = new Button.Builder(Component.empty(), (button) -> {
-                // 点击后弹出确认界面
-                this.minecraft.setScreen(new ConfirmScreen(
-                    yes -> {
-                        if (yes) {
-                            NetworkHandler.sendSubmitItemToServer(
-                                dialogEntry.getId(), 
-                                submitInfo.getItemId(), 
-                                submitInfo.getItemNbt(), 
-                                submitInfo.getItemCount()
-                            );
-                            // 提交后关闭当前对话界面，等待服务器响应
-                            this.onClose(); 
-                        }
-                        this.minecraft.setScreen(this); // 返回对话界面
-                    },
-                    Component.translatable("gui.vndialog.submit_item.confirm_title"),
-                    Component.translatable("gui.vndialog.submit_item.confirm_message", itemStack.getHoverName(), submitInfo.getItemCount())
-                ));
-            })
-            .bounds(buttonX, buttonY, buttonSize, buttonSize)
-            .tooltip(Tooltip.create(Component.translatable("gui.vndialog.submit_item.tooltip", itemStack.getHoverName(), submitInfo.getItemCount())))
-            .build();
-            
-            // 自定义按钮渲染以显示物品图标
-            this.submitItemButton.setMessage(Component.empty()); // 清空文本，我们将自己画图标
-
-            this.addRenderableWidget(this.submitItemButton);
-        }
-    }
-
     private void createOptionButtons() {
         optionButtons.clear();
         
@@ -305,13 +245,13 @@ public class DialogScreen extends Screen {
                     buttonY,
                     buttonWidth, buttonHeight,
                     // 使用原始文本，因为选项文本是从对话数据中动态加载的
-                    option.getText(),
+                    option.getText(playerName),
                     b -> {
                         // 执行选项指令（如果存在）
                         if (option.getCommand() != null && !option.getCommand().isEmpty()) {
                             DialogManager.getInstance().executeCommand(this.getMinecraft().player, option.getCommand());
                         }
-                        DialogManager.getInstance().recordChoiceForCurrentDialog(option.getText().getString());
+                        DialogManager.getInstance().recordChoiceForCurrentDialog(option.getText(this.playerName).getString());
                         DialogManager.getInstance().jumpToDialog(option.getTargetId());
                     }
             );
@@ -320,6 +260,8 @@ public class DialogScreen extends Screen {
             addRenderableWidget(button);
         }
     }
+
+
     
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
@@ -330,25 +272,6 @@ public class DialogScreen extends Screen {
             // 渲染历史记录界面的关闭按钮
             this.closeHistoryButton.render(guiGraphics, mouseX, mouseY, partialTicks);
             return; // 不渲染对话框和立绘
-        }
-
-        // 渲染提交物品按钮的图标 (如果存在且是Button实例)
-        if (this.submitItemButton != null && dialogEntry.getSubmitItemInfo() != null) {
-            SubmitItemInfo submitInfo = dialogEntry.getSubmitItemInfo();
-            net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(submitInfo.getItemId()));
-            if (item != null && item != Items.AIR) {
-                ItemStack itemStack = new ItemStack(item, 1); // 数量为1用于显示
-                 if (submitInfo.getItemNbt() != null && !submitInfo.getItemNbt().isEmpty()) {
-                    try {
-                        CompoundTag nbt = TagParser.parseTag(submitInfo.getItemNbt());
-                        itemStack.setTag(nbt);
-                    } catch (Exception e) { /* NBT解析失败则不设置 */ }
-                }
-                // 在按钮中心渲染物品图标
-                int iconX = this.submitItemButton.getX() + (this.submitItemButton.getWidth() - 16) / 2;
-                int iconY = this.submitItemButton.getY() + (this.submitItemButton.getHeight() - 16) / 2;
-                guiGraphics.renderFakeItem(itemStack, iconX, iconY);
-            }
         }
 
         // 渲染立绘
@@ -483,14 +406,14 @@ public class DialogScreen extends Screen {
         int textY = dialogBoxY + padding;
         
         // 如果显示说话者名称且有说话者
-        Component speakerComponent = dialogEntry.getSpeaker();
+        Component speakerComponent = dialogEntry.getSpeaker(playerName);
         if (Config.SHOW_SPEAKER_NAME.get() && speakerComponent != null && !speakerComponent.getString().isEmpty()) {
             guiGraphics.drawString(font, Component.literal("[").append(speakerComponent).append("]"), textX, textY, 0xFFFFFF);
             textY += font.lineHeight + 5;
         }
         
         // 渲染对话文本
-        String rawText = dialogEntry.getText().getString();
+        String rawText = dialogEntry.getText(playerName).getString();
         if (rawText != null && !rawText.isEmpty()) {
             int maxWidth = dialogBoxWidth - (padding * 2);
             int textAnimationSpeed = Config.TEXT_ANIMATION_SPEED.get(); // 每秒字符数
@@ -533,7 +456,7 @@ public class DialogScreen extends Screen {
             
             List<net.minecraft.util.FormattedCharSequence> lines;
             if (textFullyDisplayed) {
-                lines = font.split(dialogEntry.getText(), maxWidth);
+                lines = font.split(dialogEntry.getText(playerName), maxWidth);
             } else {
                 String animatedString = rawText.substring(0, Math.min(currentCharIndex, rawText.length()));
                 if (animatedString.isEmpty()) {
@@ -640,7 +563,7 @@ public class DialogScreen extends Screen {
                 updateAutoPlayButtonText();
             }
             textFullyDisplayed = true;
-            currentCharIndex = dialogEntry.getText().getString().length();
+            currentCharIndex = dialogEntry.getText(playerName).getString().length();
             lastCharTime = System.currentTimeMillis();
             return true;
         }
@@ -684,7 +607,7 @@ public class DialogScreen extends Screen {
                 if (!textFullyDisplayed) {
                     // 如果文本未完全显示，点击使其完全显示
                     textFullyDisplayed = true;
-                    currentCharIndex = dialogEntry.getText().getString().length();
+                    currentCharIndex = dialogEntry.getText(playerName).getString().length();
                     lastCharTime = 0; // 重置动画或自动播放的时间
                     return true; // 消费点击事件
                 } else {
@@ -779,8 +702,8 @@ public class DialogScreen extends Screen {
         // 重新计算内容总高度
         totalHistoryContentHeight = 0;
         for (DialogEntry entry : historyEntries) {
-            Component currentEntrySpeaker = entry.getSpeaker();
-            Component dialogText = entry.getText();
+            Component currentEntrySpeaker = entry.getSpeaker(playerName);
+            Component dialogText = entry.getText(playerName);
             Component lineToRender;
             if (dialogText == null) dialogText = Component.empty();
             if (currentEntrySpeaker != null && !currentEntrySpeaker.getString().isEmpty()) {
@@ -821,8 +744,8 @@ public class DialogScreen extends Screen {
         for (DialogEntry entry : historyEntries) {
 
 
-            Component currentEntrySpeaker = entry.getSpeaker();
-            Component dialogText = entry.getText();
+            Component currentEntrySpeaker = entry.getSpeaker(playerName);
+            Component dialogText = entry.getText(playerName);
             Component lineToRender;
 
             if (dialogText == null) {

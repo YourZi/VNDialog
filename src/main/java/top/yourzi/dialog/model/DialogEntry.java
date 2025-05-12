@@ -3,9 +3,14 @@ package top.yourzi.dialog.model;
 import java.util.List;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import java.util.Map;
+import java.util.ArrayList;
 
 /**
  * 表示单条对话的数据模型。
@@ -29,89 +34,82 @@ public class DialogEntry {
     private String selectedOptionText;
     // 该对话条目完成后执行的命令
     private String command;
-
-    // 提交物品的信息
-    @SerializedName("submit_item")
-    private SubmitItemInfo submitItemInfo;
-
-    // 缓存的文本组件
-    private transient Component cachedTextComponent;
-    // 缓存的说话者组件
-    private transient Component cachedSpeakerComponent;
     
-    public DialogEntry() {
-    }
+    public DialogEntry() {}
 
-    public SubmitItemInfo getSubmitItemInfo() {
-        return submitItemInfo;
-    }
+    public Component placeHolderReplace(String fromString, String toString, JsonElement targetElement) {
+        if (targetElement == null || targetElement.isJsonNull()) {
+            return Component.empty();
+        }
+        String pString = (toString == null) ? "" : toString;
 
-    public void setSubmitItemInfo(SubmitItemInfo submitItemInfo) {
-        this.submitItemInfo = submitItemInfo;
-    }
-    
-    public Component getText() {
-        if (cachedTextComponent != null) {
-            return cachedTextComponent;
-        }
-        if (text == null) {
-            cachedTextComponent = Component.empty();
-            return cachedTextComponent;
-        }
-        if (text.isJsonPrimitive() && text.getAsJsonPrimitive().isString()) {
-            cachedTextComponent = Component.literal(text.getAsString());
-            return cachedTextComponent;
-        }
-        if (text.isJsonObject()) {
-            cachedTextComponent = Component.Serializer.fromJson(text);
-            return cachedTextComponent;
-        }
-        if (text.isJsonArray()) {
-            MutableComponent combinedText = Component.empty();
-            JsonArray jsonArray = text.getAsJsonArray();
-            for (JsonElement element : jsonArray) {
-                if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
-                    combinedText.append(Component.literal(element.getAsString()));
-                } else if (element.isJsonObject()) {
-                    Component component = Component.Serializer.fromJson(element);
-                    if (component != null) {
-                        combinedText.append(component);
-                    }
+        if (targetElement.isJsonObject()) {
+            JsonObject jsonObjectCopy = targetElement.getAsJsonObject().deepCopy();
+            performDeepPlaceholderReplace(jsonObjectCopy, fromString, pString);
+
+            Component componentAfterJsonProcessing;
+            try {
+                componentAfterJsonProcessing = Component.Serializer.fromJson(jsonObjectCopy);
+            } catch (JsonSyntaxException e) {
+                try {
+                    componentAfterJsonProcessing = Component.Serializer.fromJson(targetElement); // Fallback to original
+                } catch (JsonSyntaxException e2) {
+                    return Component.empty(); // Both failed
                 }
             }
-            cachedTextComponent = combinedText;
-            return cachedTextComponent;
+            return replaceTextInComponent(componentAfterJsonProcessing, fromString, pString);
+
+        } else if (targetElement.isJsonArray()) {
+            MutableComponent combinedText = Component.empty();
+            JsonArray jsonArray = targetElement.getAsJsonArray();
+            for (JsonElement element : jsonArray) {
+                combinedText.append(placeHolderReplace(fromString, pString, element));
+            }
+            return combinedText;
+        } else if (targetElement.isJsonPrimitive() && targetElement.getAsJsonPrimitive().isString()) {
+            return Component.literal(targetElement.getAsString().replace(fromString, pString));
         }
-        cachedTextComponent = Component.empty();
-        return cachedTextComponent;
+        
+        // Fallback for other JsonElement types (e.g., numbers, booleans)
+        try {
+            Component component = Component.Serializer.fromJson(targetElement);
+            return replaceTextInComponent(component, fromString, pString);
+        } catch (JsonSyntaxException e) {
+            return Component.empty();
+        }
+    }
+
+    private Component replaceTextInComponent(Component component, String placeholder, String replacement) {
+        if (component == null) {
+            return Component.empty();
+        }
+
+        MutableComponent newComponent = Component.empty();
+        newComponent.setStyle(component.getStyle());
+
+        component.visit((style, text) -> {
+            String replacedText = text.replace(placeholder, replacement);
+            newComponent.append(Component.literal(replacedText).setStyle(style));
+            return java.util.Optional.empty(); // Continue visitation
+        }, net.minecraft.network.chat.Style.EMPTY);
+
+        return newComponent;
+    }
+
+    public Component getText(String playerName) {
+        return placeHolderReplace("@i", playerName, text);
     }
 
     public void setText(JsonElement text) {
         this.text = text;
-        this.cachedTextComponent = null; // 重置缓存
     }
 
-    public Component getSpeaker() {
-        if (cachedSpeakerComponent != null) {
-            return cachedSpeakerComponent;
-        }
-        if (speaker == null) {
-            return null;
-        }
-        if (speaker.isJsonPrimitive() && speaker.getAsJsonPrimitive().isString()) {
-            cachedSpeakerComponent = Component.literal(speaker.getAsString());
-            return cachedSpeakerComponent;
-        }
-        if (speaker.isJsonObject()) {
-            cachedSpeakerComponent = Component.Serializer.fromJson(speaker);
-            return cachedSpeakerComponent;
-        }
-        return null;
+    public Component getSpeaker(String playerName) {
+        return placeHolderReplace("@i", playerName, speaker);
     }
 
     public void setSpeaker(JsonElement speaker) {
         this.speaker = speaker;
-        this.cachedSpeakerComponent = null; // 重置缓存
     }
     
     public List<PortraitInfo> getPortraits() {
@@ -164,5 +162,59 @@ public class DialogEntry {
 
     public void setCommand(String command) {
         this.command = command;
+    }
+
+    private boolean performDeepPlaceholderReplace(JsonObject jsonObject, String placeholder, String replacement) {
+        boolean modified = false;
+        for (Map.Entry<String, JsonElement> entry : new ArrayList<>(jsonObject.entrySet())) {
+            String key = entry.getKey();
+            JsonElement value = entry.getValue();
+
+            if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                String originalString = value.getAsString();
+                String replacedString = originalString.replace(placeholder, replacement);
+                if (!originalString.equals(replacedString)) {
+                    jsonObject.addProperty(key, replacedString);
+                    modified = true;
+                }
+            } else if (value.isJsonObject()) {
+                if (performDeepPlaceholderReplace(value.getAsJsonObject(), placeholder, replacement)) {
+                    modified = true;
+                }
+            } else if (value.isJsonArray()) {
+                JsonArray jsonArray = value.getAsJsonArray();
+                if (performDeepPlaceholderReplaceInArray(jsonArray, placeholder, replacement)) {
+                    modified = true;
+                }
+            }
+        }
+        return modified;
+    }
+
+    private boolean performDeepPlaceholderReplaceInArray(JsonArray jsonArray, String placeholder, String replacement) {
+        boolean overallArrayModified = false;
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JsonElement element = jsonArray.get(i);
+            boolean elementModifiedInLoop = false;
+            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                String originalString = element.getAsString();
+                String replacedString = originalString.replace(placeholder, replacement);
+                if (!originalString.equals(replacedString)) {
+                    jsonArray.set(i, new JsonPrimitive(replacedString));
+                    elementModifiedInLoop = true;
+                }
+            } else if (element.isJsonObject()) {
+                JsonObject nestedObject = element.getAsJsonObject();
+                if (performDeepPlaceholderReplace(nestedObject, placeholder, replacement)) {
+                    elementModifiedInLoop = true; 
+                }
+            } else if (element.isJsonArray()) {
+                if (performDeepPlaceholderReplaceInArray(element.getAsJsonArray(), placeholder, replacement)) {
+                     elementModifiedInLoop = true;
+                }
+            }
+            if(elementModifiedInLoop) overallArrayModified = true;
+        }
+        return overallArrayModified;
     }
 }

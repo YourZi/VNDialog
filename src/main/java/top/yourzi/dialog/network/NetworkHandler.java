@@ -70,11 +70,11 @@ public class NetworkHandler {
                 SyncAllDialogsPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
                 
-        // 注册从客户端到服务端的提交物品包
-        INSTANCE.registerMessage(7, SubmitItemPacket.class, // 新的ID
-                SubmitItemPacket::encode,
-                SubmitItemPacket::decode,
-                SubmitItemPacket::handle,
+        // 注册从客户端到服务端的执行命令包
+        INSTANCE.registerMessage(6, ExecuteServerCommandPacket.class, // 新的ID
+                ExecuteServerCommandPacket::encode,
+                ExecuteServerCommandPacket::decode,
+                ExecuteServerCommandPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
@@ -139,18 +139,13 @@ public class NetworkHandler {
     }
 
     /**
-     * 客户端向服务端发送提交物品请求的网络包
+     * 客户端向服务端发送执行命令请求的网络包
      */
-    public static void sendSubmitItemToServer(String dialogId, String itemId, String itemNbt, int itemCount) {
+    public static void sendExecuteCommandToServer(String command) {
         if (Minecraft.getInstance() != null && Minecraft.getInstance().getConnection() != null) {
-<<<<<<< HEAD
-            INSTANCE.sendToServer(new SubmitItemPacket(dialogId, itemId, itemNbt, itemCount));
-            Dialog.LOGGER.info("Sent request to submit item for dialog '{}': item '{}', nbt '{}', count {}", dialogId, itemId, itemNbt, itemCount);
-=======
             INSTANCE.sendToServer(new ExecuteServerCommandPacket(command));
->>>>>>> 270cb6d (移除冗余的日志输出)
         } else {
-            Dialog.LOGGER.warn("Cannot send SubmitItemPacket: not on client or no connection.");
+            Dialog.LOGGER.warn("Cannot send ExecuteServerCommandPacket: not on client or no connection.");
         }
     }
 }

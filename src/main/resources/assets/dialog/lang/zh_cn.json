@@ -37,7 +37,7 @@
   "dialog.test_dialog.speaker.tlipoca": "特莉波卡",
   "dialog.test_dialog.speaker.leaf": "小叶子",
 
-  "dialog.test_dialog.entry.start.text": "欢迎猊下使用本模组！这是一个对话系统示例。",
+  "dialog.test_dialog.entry.start.text": "@i欢迎使用本模组,这是一个对话系统示例。",
   "dialog.test_dialog.entry.1.text": "这个对话系统可以同时显示多个角色，并在左中右三个位置显示立绘。",
   "dialog.test_dialog.entry.2.text": "你可以通过JSON文件配置对话内容，包括文本、说话者、立绘及其位置、透明度等，可以简单且高效全面地自定义对话。",
   "dialog.test_dialog.entry.3.text.0": "当然，像是",

@@ -2,6 +2,8 @@ package top.yourzi.dialog;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -9,10 +11,8 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
 import top.yourzi.dialog.model.DialogEntry;
 import top.yourzi.dialog.model.DialogSequence;
-import top.yourzi.dialog.model.SubmitItemInfo;
 import top.yourzi.dialog.ui.DialogScreen;
 import top.yourzi.dialog.network.NetworkHandler;
 import java.io.BufferedReader;
@@ -27,13 +27,6 @@ import java.util.stream.Collectors;
 import java.util.Collections;
 
 import net.minecraft.world.entity.player.Player;
-/**
- * 对话系统的核心管理类，负责加载和管理对话序列。
- */
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.nbt.TagParser;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 
 public class DialogManager {
@@ -53,6 +46,8 @@ public class DialogManager {
     private static boolean isFastForwardingNext = false;
     // 自动播放状态
     private static boolean isAutoPlaying = false;
+    // 存储当前对话的玩家名称
+    private String currentDialogPlayerName;
 
     private DialogManager() {}
     
@@ -159,7 +154,7 @@ public class DialogManager {
                 } else {
                     Dialog.LOGGER.warn("Parsing of the dialog data received from the server failed or the ID is null. ID: {}, JSON: {}", id, json);
                 }
-            } catch (com.google.gson.JsonSyntaxException e) {
+            } catch (JsonSyntaxException e) {
                 Dialog.LOGGER.error("Failed to parse the dialog JSON received from the server. ID: {}, 错误: {}", id, e.getMessage());
                 Dialog.LOGGER.debug("(ID: {}): {}", id, json, e);
             }
@@ -299,9 +294,15 @@ public class DialogManager {
             sendPlayerMessage(Component.translatable("dialog.manager.no_entries", dialogId));
             return;
         }
-        
+        // 获取玩家名称
+        String playerName = "";
+        if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getGameProfile() != null) {
+            playerName = Minecraft.getInstance().player.getGameProfile().getName();
+        }
+        this.currentDialogPlayerName = playerName;
+
         // 显示对话界面
-        Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry));
+        Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry, playerName));
     }
 
     /**
@@ -361,7 +362,7 @@ public class DialogManager {
         currentEntry = nextEntry;
         addDialogToHistory(currentEntry); // 将后续条目加入历史记录
         // 更新对话界面
-        Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry));
+        Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry, this.currentDialogPlayerName));
     }
     /**
      * 根据选项跳转到指定的对话。
@@ -382,66 +383,10 @@ public class DialogManager {
         
         currentEntry = targetEntry;
         addDialogToHistory(currentEntry); // 将跳转的条目加入历史记录
-        Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry));
+        Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry, this.currentDialogPlayerName));
     }
-
     /**
-     * (服务端) 处理客户端提交物品的请求。
-     */
-    public void handleSubmitItem(ServerPlayer player, String clientDialogId, String clientItemId, String clientItemNbt, int clientItemCount) {
-        Dialog.LOGGER.info("Player {} attempting to submit item: id={}, nbt={}, count={} for dialogId: {}", 
-            player.getName().getString(), clientItemId, clientItemNbt, clientItemCount, clientDialogId);
-
-        DialogSequence sequence = getDialogSequenceForPlayer(player, clientDialogId); // 获取当前对话序列
-        if (sequence == null) {
-            Dialog.LOGGER.warn("DialogSequence not found for player {} and dialogId {}. Cannot process item submission.", player.getName().getString(), clientDialogId);
-            // 可以选择向玩家发送错误消息
-            return;
-        }
-
-        DialogEntry entry = sequence.findEntryById(clientDialogId); // 查找当前对话条目
-        if (entry == null || entry.getSubmitItemInfo() == null) {
-            Dialog.LOGGER.warn("DialogEntry or SubmitItemInfo not found for dialogId {}. Cannot process item submission.", clientDialogId);
-            return;
-        }
-
-        SubmitItemInfo submitInfo = entry.getSubmitItemInfo();
-
-        // 校验客户端发送的数据是否与服务器端配置一致 (防止恶意修改)
-        if (!submitInfo.getItemId().equals(clientItemId) || 
-            (submitInfo.getItemNbt() != null && !submitInfo.getItemNbt().equals(clientItemNbt)) || 
-            (submitInfo.getItemNbt() == null && clientItemNbt != null) || 
-            submitInfo.getItemCount() != clientItemCount) {
-            Dialog.LOGGER.warn("Client item submission data mismatch for player {}. Expected: id={}, nbt={}, count={}. Actual: id={}, nbt={}, count={}",
-                player.getName().getString(), submitInfo.getItemId(), submitInfo.getItemNbt(), submitInfo.getItemCount(),
-                clientItemId, clientItemNbt, clientItemCount);
-            return;
-        }
-
-        // 检查玩家背包中是否有足够的物品
-        boolean hasEnoughItems = checkAndRemovePlayerItems(player, submitInfo.getItemId(), submitInfo.getItemNbt(), submitInfo.getItemCount());
-
-        if (hasEnoughItems) {
-            Dialog.LOGGER.info("Player {} successfully submitted items. Proceeding to target dialog and command execution.", player.getName().getString());
-            // 执行指令 (如果存在)
-            if (submitInfo.getCommand() != null && !submitInfo.getCommand().isEmpty()) {
-                executeCommand(player, submitInfo.getCommand());
-            }
-            // 跳转到目标对话
-            if (submitInfo.getTargetDialogId() != null && !submitInfo.getTargetDialogId().isEmpty()) {
-                NetworkHandler.sendShowDialogToPlayer(player, submitInfo.getTargetDialogId());
-            } else {
-                Dialog.LOGGER.warn("TargetDialogId is null or empty for item submission in dialog {}. Player will remain in current dialog.", clientDialogId);
-            }
-        } else {
-            Dialog.LOGGER.info("Player {} does not have enough items to submit.", player.getName().getString());
-        }
-    }
-
-    /**
-     * (服务端) 获取玩家当前对话序列。由于客户端可能不同步，这里需要一种方式获取。
-     * 简单实现：假设玩家当前对话就是请求的dialogId对应的序列。
-     * 复杂实现：可能需要追踪每个玩家的当前对话状态。
+     * (服务端) 获取玩家当前对话序列。
      */
     private DialogSequence getDialogSequenceForPlayer(ServerPlayer player, String dialogId) {
         DialogSequence sequence = dialogSequences.get(dialogId);
@@ -458,75 +403,8 @@ public class DialogManager {
      * (服务端) 在服务器上代表玩家执行命令。
      */
     public void executeCommand(Player player, String command) {
-<<<<<<< HEAD
-        if (player.getServer() != null) {
-            player.getServer().getCommands().performPrefixedCommand(
-                player.createCommandSourceStack().withPermission(2),
-                command
-            );
-=======
         if (command != null && !command.isEmpty()) {
             NetworkHandler.sendExecuteCommandToServer(command);
->>>>>>> 270cb6d (移除冗余的日志输出)
         }
-    }
-
-    /**
-     * (服务端) 检查并移除玩家背包中的物品。
-     * @return 如果成功移除返回true，否则返回false。
-     */
-    private boolean checkAndRemovePlayerItems(ServerPlayer player, String itemId, String itemNbtStr, int requiredCount) {
-        net.minecraft.world.item.Item targetItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
-        if (targetItem == null || targetItem == Items.AIR) {
-            Dialog.LOGGER.warn("Invalid item ID for submission: {}", itemId);
-            return false;
-        }
-
-        CompoundTag requiredNbt = null;
-        if (itemNbtStr != null && !itemNbtStr.isEmpty()) {
-            try {
-                requiredNbt = TagParser.parseTag(itemNbtStr);
-            } catch (Exception e) {
-                Dialog.LOGGER.warn("Invalid NBT string for item submission: {}. Error: {}", itemNbtStr, e.getMessage());
-                return false;
-            }
-        }
-
-        int foundCount = 0;
-        List<Integer> slotsToRemove = new ArrayList<>();
-        for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
-            ItemStack stackInSlot = player.getInventory().getItem(i);
-            if (!stackInSlot.isEmpty() && stackInSlot.getItem() == targetItem) {
-                boolean nbtMatch = (requiredNbt == null) || (stackInSlot.hasTag() && requiredNbt.equals(stackInSlot.getTag()));
-                if (nbtMatch) {
-                    foundCount += stackInSlot.getCount();
-                }
-            }
-        }
-
-        if (foundCount < requiredCount) {
-            return false; // 物品不足
-        }
-
-        // 移除物品
-        int countToRemove = requiredCount;
-        for (int i = 0; i < player.getInventory().getContainerSize(); ++i) {
-            if (countToRemove <= 0) break;
-            ItemStack stackInSlot = player.getInventory().getItem(i);
-            if (!stackInSlot.isEmpty() && stackInSlot.getItem() == targetItem) {
-                boolean nbtMatch = (requiredNbt == null) || (stackInSlot.hasTag() && requiredNbt.equals(stackInSlot.getTag()));
-                if (nbtMatch) {
-                    int amountInStack = stackInSlot.getCount();
-                    int amountToTake = Math.min(countToRemove, amountInStack);
-                    stackInSlot.shrink(amountToTake);
-                    countToRemove -= amountToTake;
-                    if (stackInSlot.isEmpty()) {
-                        player.getInventory().setItem(i, ItemStack.EMPTY);
-                    }
-                }
-            }
-        }
-        player.getInventory().setChanged(); // 通知背包更新
-        return true;
     }
 }
