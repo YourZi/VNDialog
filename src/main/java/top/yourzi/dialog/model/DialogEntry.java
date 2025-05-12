@@ -70,7 +70,6 @@ public class DialogEntry {
             return Component.literal(targetElement.getAsString().replace(fromString, pString));
         }
         
-        // Fallback for other JsonElement types (e.g., numbers, booleans)
         try {
             Component component = Component.Serializer.fromJson(targetElement);
             return replaceTextInComponent(component, fromString, pString);

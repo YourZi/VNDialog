@@ -73,7 +73,7 @@ public class DialogOption {
         this.command = command;
     }
 
-    // Helper methods for deep placeholder replacement, adapted from DialogEntry
+
     private Component placeHolderReplace(String fromString, String toString, JsonElement targetElement) {
         if (targetElement == null || targetElement.isJsonNull()) {
             return Component.empty();
@@ -107,7 +107,6 @@ public class DialogOption {
             return Component.literal(targetElement.getAsString().replace(fromString, pString));
         }
         
-        // Fallback for other JsonElement types (e.g., numbers, booleans)
         try {
             Component component = Component.Serializer.fromJson(targetElement);
             return replaceTextInComponent(component, fromString, pString);
@@ -130,7 +129,6 @@ public class DialogOption {
                     modified = true;
                 }
             } else if (value.isJsonObject()) {
-                // Recursively call on the nested JsonObject
                 if (performDeepPlaceholderReplace(value.getAsJsonObject(), placeholder, replacement)) {
                     modified = true;
                 }
