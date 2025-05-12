@@ -42,7 +42,9 @@
       "id": "start",
       "speaker": "System",
       "text": "Hello world! ",
-      "portraits":{"path": "character.png"}            
+      "portraits":[
+       {"path": "character.png"} 
+      ]           
     }
   ]
 }
