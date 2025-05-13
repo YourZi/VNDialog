@@ -49,7 +49,7 @@
   ]
 }
 ```
-将这个json文件放在`data/dialog/dialogs`文件夹下。
+将这个json文件放在数据包的`data/dialog/dialogs`文件夹下。
 
 然后，在游戏内使用`/dialog reload`指令重载对话列表。如果一切顺利，你应该能看到你的对话被加载的提示。
 最后，使用`/dialog show <dialog_id>`指令来展示你的对话，例如`/dialog show hello_world`。
