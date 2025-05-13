@@ -408,7 +408,7 @@ public class DialogScreen extends Screen {
         // 如果显示说话者名称且有说话者
         Component speakerComponent = dialogEntry.getSpeaker(playerName);
         if (Config.SHOW_SPEAKER_NAME.get() && speakerComponent != null && !speakerComponent.getString().isEmpty()) {
-            guiGraphics.drawString(font, Component.literal("[").append(speakerComponent).append("]"), textX, textY, 0xFFFFFF);
+            guiGraphics.drawString(font, speakerComponent, textX, textY, 0xFFFFFF);
             textY += font.lineHeight + 5;
         }
         
