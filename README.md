@@ -167,6 +167,13 @@
 - **`commands` (可选)**: `String`
   - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该选项被选择后、跳转到 `target` 之前执行。
 
+### 🔣占位符
+
+你可以自由地在说话者和对话文本、选项中使用占位符，目前已有的占位符如下：
+
+- **`@i`**:当前对话的玩家名称
+
+
 ### 📝 示例：一个包含分支和立绘的对话
 - [点击跳转至示例文件](src/main/resources/data/dialog/dialogs/test_dialog.json)
 - 可以在游戏内使用`/dialog show test_dialog`来预览效果
