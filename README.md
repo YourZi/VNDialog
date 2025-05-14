@@ -156,7 +156,8 @@
   "target": "entry_id_after_choosing_this",
   "commands": [
     // ... 当此选项被选择时执行的指令列表 ...
-  ]
+  ],
+  "visibility_command": "execute if entity @s[tag=test_tag]"
 }
 ```
 
@@ -166,6 +167,8 @@
   - 当玩家选择此选项后，对话将跳转到的条目的 `id`。
 - **`commands` (可选)**: `String`
   - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该选项被选择后、跳转到 `target` 之前执行。
+- **`visibility_command` (可选)**: `String`
+  - 一个Minecraft指令字符串（不需要前导 `/`）。该指令会在服务端尝试向客户端展示此选项前，以发起对话的玩家的身份（但拥有OP权限）执行。如果指令执行成功并返回值为 `1` (代表true)，则此选项对该玩家可见。如果指令不存在、执行失败或返回值不为 `1`，则此选项对该玩家不可见。
 
 ### 🔣占位符
 
