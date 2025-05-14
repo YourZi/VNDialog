@@ -65,12 +65,24 @@ public class DialogOption {
     // 选择该选项后执行的命令
     private String command;
 
+    // 控制该选项是否可见的指令
+    @SerializedName("visibility_command")
+    private String visibilityCommand;
+
     public String getCommand() {
         return command;
     }
 
     public void setCommand(String command) {
         this.command = command;
+    }
+
+    public String getVisibilityCommand() {
+        return visibilityCommand;
+    }
+
+    public void setVisibilityCommand(String visibilityCommand) {
+        this.visibilityCommand = visibilityCommand;
     }
 
 

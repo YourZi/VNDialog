@@ -50,7 +50,7 @@ public class DialogScreen extends Screen {
 
         PortraitDisplayData(String path, float brightness, PortraitPosition position, PortraitAnimationType animationType) {
             if (path != null && !path.isEmpty()) {
-                this.resourceLocation = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, String.format("textures/portraits/%s", path));
+                this.resourceLocation = new ResourceLocation(Dialog.MODID, String.format("textures/portraits/%s", path));
                 this.brightness = brightness;
                 this.position = position != null ? position : PortraitPosition.RIGHT; // 位置
                 this.animationType = animationType != null ? animationType : PortraitAnimationType.NONE; // 动画类型
@@ -364,7 +364,7 @@ public class DialogScreen extends Screen {
         String backgroundImagePath = "textures/dialog_background/background.png";
         if (backgroundImagePath != null && !backgroundImagePath.isEmpty()) {
             try {
-                ResourceLocation dialogBgRl = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, backgroundImagePath);
+                ResourceLocation dialogBgRl = new ResourceLocation(Dialog.MODID, backgroundImagePath);
                 
                 RenderSystem.setShader(GameRenderer::getPositionTexShader); // 确保使用正确的着色器
                 RenderSystem.setShaderTexture(0, dialogBgRl); // 绑定纹理

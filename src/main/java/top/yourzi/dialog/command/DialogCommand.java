@@ -52,10 +52,27 @@ public class DialogCommand {
         CommandSourceStack source = context.getSource();
         
         if (source.getEntity() instanceof ServerPlayer player) {
-            // 服务端通知客户端显示指定ID的对话
-            // 客户端的 DialogManager.showDialog 将从其缓存中查找对话
-            source.sendSuccess(() -> Component.literal("正在指示客户端显示对话: " + dialogId), false);
-            top.yourzi.dialog.network.NetworkHandler.sendShowDialogToPlayer(player, dialogId);
+            DialogManager dialogManager = DialogManager.getInstance();
+            DialogSequence originalSequence = dialogManager.getDialogSequence(dialogId);
+
+            if (originalSequence == null) {
+                source.sendFailure(Component.literal("Dialog with ID '" + dialogId + "' not found."));
+                return 0;
+            }
+
+            // 为玩家创建特定对话序列 (过滤选项)
+            DialogSequence playerSpecificSequence = dialogManager.createPlayerSpecificSequence(originalSequence, player, source.getServer());
+            if (playerSpecificSequence == null) {
+                 source.sendFailure(Component.literal("Failed to create player-specific dialog for ID '" + dialogId + "'."));
+                 return 0;
+            }
+
+            // 将过滤后的对话序列转换为JSON
+            String dialogJson = DialogManager.GSON.toJson(playerSpecificSequence);
+
+            source.sendSuccess(() -> Component.literal("正在向客户端发送对话: " + dialogId), false);
+            // 发送包含完整对话数据的包
+            top.yourzi.dialog.network.NetworkHandler.sendShowDialogToPlayer(player, dialogId, dialogJson);
             return 1;
         } else {
             source.sendFailure(Component.translatable("dialog.command.show.player_only"));

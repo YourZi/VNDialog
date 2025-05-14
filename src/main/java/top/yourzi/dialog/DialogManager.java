@@ -12,9 +12,14 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import top.yourzi.dialog.model.DialogEntry;
+import top.yourzi.dialog.model.DialogOption;
 import top.yourzi.dialog.model.DialogSequence;
 import top.yourzi.dialog.ui.DialogScreen;
 import top.yourzi.dialog.network.NetworkHandler;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.commands.CommandSourceStack;
+import com.google.gson.JsonSyntaxException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -30,7 +35,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
 
 public class DialogManager {
-    private static final Gson GSON = new GsonBuilder().create();
+    public static final Gson GSON = new GsonBuilder().create();
     private static final DialogManager INSTANCE = new DialogManager();
 
     // 服务端: 存储所有从数据包加载的对话序列
@@ -246,6 +251,71 @@ public class DialogManager {
     public Map<String, DialogSequence> getAllDialogSequences() {
         return new HashMap<>(dialogSequences);
     }
+
+    /**
+     * (服务端) 为特定玩家创建一个对话序列的副本，并根据玩家权限和visibility_command过滤选项。
+     * @param originalSequence 原始对话序列。
+     * @param player 执行命令的玩家。
+     * @param server Minecraft服务器实例。
+     * @return 经过选项过滤的对话序列副本；如果原始序列为null，则返回null。
+     */
+    public DialogSequence createPlayerSpecificSequence(DialogSequence originalSequence, ServerPlayer player, MinecraftServer server) {
+        if (originalSequence == null) {
+            Dialog.LOGGER.warn("Attempted to create player-specific sequence from null originalSequence.");
+            return null;
+        }
+
+        // Deep copy the original sequence using Gson
+        DialogSequence playerSpecificSequence = GSON.fromJson(GSON.toJson(originalSequence), DialogSequence.class);
+
+        if (playerSpecificSequence == null) { // Should not happen if originalSequence is not null and GSON works
+            Dialog.LOGGER.error("Failed to deep copy originalSequence for ID: {}", originalSequence.getId());
+            return originalSequence; // Fallback to original, though this indicates a problem
+        }
+        
+        if (playerSpecificSequence.getEntries() == null) {
+            return playerSpecificSequence; // No entries to filter
+        }
+
+        for (DialogEntry entry : playerSpecificSequence.getEntries()) {
+            if (entry == null || !entry.hasOptions()) {
+                continue; // Skip null entries or entries without options
+            }
+
+            List<DialogOption> visibleOptions = new ArrayList<>();
+            // Create a command source for the player with OP-level permissions.
+            // This source is used to execute the visibility commands.
+            CommandSourceStack commandSource = player.createCommandSourceStack()
+                .withPermission(server.getOperatorUserPermissionLevel()) // Use server's defined OP level
+                .withSuppressedOutput(); // Suppress command output to player's chat during this check
+
+            for (DialogOption option : entry.getOptions()) {
+                String visibilityCommand = option.getVisibilityCommand();
+                if (visibilityCommand == null || visibilityCommand.isEmpty()) {
+                    visibleOptions.add(option); // No command, option is always visible
+                    continue;
+                }
+
+                try {
+                    // Execute the command. The result is typically 1 for success on simple conditional commands.
+                    int result = server.getCommands().performPrefixedCommand(commandSource, visibilityCommand);
+                    if (result == 1) {
+                        visibleOptions.add(option);
+                    } else {
+                        Dialog.LOGGER.debug("Visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {} returned {}, option hidden.",
+                                           visibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), result);
+                    }
+                } catch (Exception e) {
+                    // Log error and hide option if command execution fails
+                    Dialog.LOGGER.warn("Error executing visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {}: {}. Option hidden.",
+                                       visibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
+                }
+            }
+            // Update the entry's options with only the visible ones
+            entry.setOptions(visibleOptions.toArray(new DialogOption[0]));
+        }
+        return playerSpecificSequence;
+    }
     
     /**
      * 显示指定ID的对话序列。
@@ -303,6 +373,59 @@ public class DialogManager {
 
         // 显示对话界面
         Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry, playerName));
+    }
+
+    /**
+     * (客户端) 接收从服务端发送过来的、已经为当前玩家过滤好选项的完整对话序列，并显示它。
+     * @param dialogId 对话的ID (主要用于日志和潜在的映射键)。
+     * @param sequenceJson 包含完整对话序列（已过滤选项）的JSON字符串。
+     */
+    @OnlyIn(Dist.CLIENT)
+    public void receiveAndShowPlayerSpecificDialog(String dialogId, String sequenceJson) {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
+        
+        stopAutoPlay(); // Reset auto-play
+
+        DialogSequence playerSequence;
+        try {
+            playerSequence = GSON.fromJson(sequenceJson, DialogSequence.class);
+        } catch (JsonSyntaxException e) {
+            Dialog.LOGGER.error("Failed to parse player-specific dialog sequence JSON for ID {}: {}", dialogId, e.getMessage());
+            sendPlayerMessage(Component.translatable("dialog.manager.received_sequence_parse_failed", dialogId, e.getMessage()));
+            return;
+        }
+
+        if (playerSequence == null || playerSequence.getId() == null) {
+            Dialog.LOGGER.warn("Parsed player-specific dialog sequence is null or has no ID. Original ID: {}", dialogId);
+            sendPlayerMessage(Component.translatable("dialog.manager.received_sequence_empty", dialogId));
+            return;
+        }
+
+        dialogSequences.put(playerSequence.getId(), playerSequence);
+        if (!dialogId.equals(playerSequence.getId())) {
+            Dialog.LOGGER.warn("Dialog ID mismatch! Expected (from packet): {}, ID in parsed sequence: {}. Using ID from sequence.", dialogId, playerSequence.getId());
+        }
+        
+        clearDialogHistory();
+        currentSequence = playerSequence;
+        currentEntry = playerSequence.getFirstEntry();
+        
+        if (currentEntry == null) {
+            Dialog.LOGGER.error("No entries found in player-specific dialog sequence: {}", playerSequence.getId());
+            sendPlayerMessage(Component.translatable("dialog.manager.no_entries", playerSequence.getId()));
+            currentSequence = null; 
+            return;
+        }
+
+        addDialogToHistory(currentEntry);
+
+        String playerName = "";
+        if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.getGameProfile() != null) {
+            playerName = Minecraft.getInstance().player.getGameProfile().getName();
+        }
+        this.currentDialogPlayerName = playerName;
+
+        Minecraft.getInstance().setScreen(new DialogScreen(currentSequence, currentEntry, this.currentDialogPlayerName));
     }
 
     /**
