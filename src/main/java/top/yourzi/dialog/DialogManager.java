@@ -19,7 +19,6 @@ import top.yourzi.dialog.network.NetworkHandler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.commands.CommandSourceStack;
-import com.google.gson.JsonSyntaxException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 import java.util.Collections;
 
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.server.level.ServerPlayer;
 
 public class DialogManager {
     public static final Gson GSON = new GsonBuilder().create();
@@ -226,6 +224,23 @@ public class DialogManager {
     }
 
     /**
+     * (客户端) 从缓存中清除指定ID的对话序列。
+     * @param dialogId 要清除的对话ID。
+     */
+    @OnlyIn(Dist.CLIENT)
+    public void clearDialogFromCache(String dialogId) {
+        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
+        if (dialogId == null || dialogId.isEmpty()) {
+            Dialog.LOGGER.warn("Attempted to clear a dialog with null or empty ID from cache.");
+            return;
+        }
+        DialogSequence removed = dialogSequences.remove(dialogId);
+        if (removed != null) {
+            Dialog.LOGGER.debug("Dialog '{}' removed from client cache.", dialogId);
+        }
+    }
+
+    /**
      * (服务端) 获取所有对话序列的JSON表示，用于发送给客户端。
      */
     public Map<String, String> getAllDialogJsonsForSync() {
@@ -242,7 +257,13 @@ public class DialogManager {
      * 客户端：从缓存的对话中获取。
      */
     public DialogSequence getDialogSequence(String id) {
-        return dialogSequences.get(id);
+        DialogSequence original = dialogSequences.get(id);
+        if (original != null) {
+            // Return a deep copy to prevent modification of the master cache
+            // and ensure player-specific filtering always starts from a pristine state.
+            return GSON.fromJson(GSON.toJson(original), DialogSequence.class);
+        }
+        return null;
     }
     
     /**
@@ -265,39 +286,37 @@ public class DialogManager {
             return null;
         }
 
-        // Deep copy the original sequence using Gson
+
         DialogSequence playerSpecificSequence = GSON.fromJson(GSON.toJson(originalSequence), DialogSequence.class);
 
-        if (playerSpecificSequence == null) { // Should not happen if originalSequence is not null and GSON works
-            Dialog.LOGGER.error("Failed to deep copy originalSequence for ID: {}", originalSequence.getId());
-            return originalSequence; // Fallback to original, though this indicates a problem
+        if (playerSpecificSequence == null) {
+            Dialog.LOGGER.error("Failed to deep copy originalSequence for ID: {}. No player-specific sequence will be generated.", originalSequence.getId());
+            return null;
         }
         
         if (playerSpecificSequence.getEntries() == null) {
-            return playerSpecificSequence; // No entries to filter
+            return playerSpecificSequence;
         }
 
         for (DialogEntry entry : playerSpecificSequence.getEntries()) {
             if (entry == null || !entry.hasOptions()) {
-                continue; // Skip null entries or entries without options
+                continue;
             }
 
             List<DialogOption> visibleOptions = new ArrayList<>();
-            // Create a command source for the player with OP-level permissions.
-            // This source is used to execute the visibility commands.
+
             CommandSourceStack commandSource = player.createCommandSourceStack()
-                .withPermission(server.getOperatorUserPermissionLevel()) // Use server's defined OP level
-                .withSuppressedOutput(); // Suppress command output to player's chat during this check
+                .withPermission(server.getOperatorUserPermissionLevel())
+                .withSuppressedOutput();
 
             for (DialogOption option : entry.getOptions()) {
                 String visibilityCommand = option.getVisibilityCommand();
                 if (visibilityCommand == null || visibilityCommand.isEmpty()) {
-                    visibleOptions.add(option); // No command, option is always visible
+                    visibleOptions.add(option);
                     continue;
                 }
 
                 try {
-                    // Execute the command. The result is typically 1 for success on simple conditional commands.
                     int result = server.getCommands().performPrefixedCommand(commandSource, visibilityCommand);
                     if (result == 1) {
                         visibleOptions.add(option);
@@ -306,12 +325,10 @@ public class DialogManager {
                                            visibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), result);
                     }
                 } catch (Exception e) {
-                    // Log error and hide option if command execution fails
                     Dialog.LOGGER.warn("Error executing visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {}: {}. Option hidden.",
                                        visibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
                 }
             }
-            // Update the entry's options with only the visible ones
             entry.setOptions(visibleOptions.toArray(new DialogOption[0]));
         }
         return playerSpecificSequence;
@@ -401,7 +418,6 @@ public class DialogManager {
             return;
         }
 
-        dialogSequences.put(playerSequence.getId(), playerSequence);
         if (!dialogId.equals(playerSequence.getId())) {
             Dialog.LOGGER.warn("Dialog ID mismatch! Expected (from packet): {}, ID in parsed sequence: {}. Using ID from sequence.", dialogId, playerSequence.getId());
         }

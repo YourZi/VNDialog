@@ -585,6 +585,15 @@ public class DialogScreen extends Screen {
     }
 
     @Override
+    public void onClose() {
+        // 清除当前对话的缓存
+        if (this.dialogSequence != null && this.dialogSequence.getId() != null) {
+            DialogManager.getInstance().clearDialogFromCache(this.dialogSequence.getId());
+        }
+        super.onClose(); // 调用父类的onClose，确保屏幕正常关闭
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // 如果点击，则关闭自动播放
         if (DialogManager.isAutoPlaying()) {
