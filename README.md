@@ -49,7 +49,7 @@
   ]
 }
 ```
-将这个json文件放在`data/dialog/dialogs`文件夹下。
+将这个json文件放在数据包的`data/dialog/dialogs`文件夹下。
 
 然后，在游戏内使用`/dialog reload`指令重载对话列表。如果一切顺利，你应该能看到你的对话被加载的提示。
 最后，使用`/dialog show <dialog_id>`指令来展示你的对话，例如`/dialog show hello_world`。
@@ -156,7 +156,8 @@
   "target": "entry_id_after_choosing_this",
   "commands": [
     // ... 当此选项被选择时执行的指令列表 ...
-  ]
+  ],
+  "visibility_command": "execute if entity @s[tag=test_tag]"
 }
 ```
 
@@ -168,6 +169,13 @@
   - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该选项被选择后、跳转到 `target` 之前执行。
 - **`visibility_command` (可选)**: `String`
   - 一个Minecraft指令字符串（不需要前导 `/`）。该指令会在服务端尝试向客户端展示此选项前，以发起对话的玩家的身份（但拥有OP权限）执行。如果指令执行成功并返回值为 `1` (代表true)，则此选项对该玩家可见。如果指令不存在、执行失败或返回值不为 `1`，则此选项对该玩家不可见。
+
+### 🔣占位符
+
+你可以自由地在说话者和对话文本、选项中使用占位符，目前已有的占位符如下：
+
+- **`@i`**:当前对话的玩家名称
+
 
 ### 📝 示例：一个包含分支和立绘的对话
 - [点击跳转至示例文件](src/main/resources/data/dialog/dialogs/test_dialog.json)

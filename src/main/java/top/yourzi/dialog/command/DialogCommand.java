@@ -86,22 +86,19 @@ public class DialogCommand {
     private static int reloadDialogs(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         
-        // 1. 服务器重新加载对话
-        Dialog.LOGGER.info("开始执行 /dialog reload 命令...");
+        //服务器重新加载对话
         DialogManager.getInstance().loadDialogsFromServer(source.getServer().getResourceManager());
         source.sendSuccess(() -> Component.translatable("dialog.command.reload.success_server"), true); // Notify command executor
 
-        // 2. 获取所有对话的JSON数据
+        //获取所有对话的JSON数据
         Map<String, String> allDialogJsons = DialogManager.getInstance().getAllDialogJsonsForSync();
 
-        // 3. 向所有玩家同步新的对话数据
+        //向所有玩家同步新的对话数据
         if (!allDialogJsons.isEmpty()) {
             top.yourzi.dialog.network.NetworkHandler.sendAllDialogsToAllPlayers(allDialogJsons);
             source.sendSuccess(() -> Component.translatable("dialog.command.reload.sync_sent_all", allDialogJsons.size()), true);
-            Dialog.LOGGER.info("已向所有客户端发送 {} 个对话数据进行同步。", allDialogJsons.size());
         } else {
             source.sendSuccess(() -> Component.translatable("dialog.command.reload.no_dialogs_to_sync"), true);
-            Dialog.LOGGER.info("没有对话数据需要同步到客户端。");
             top.yourzi.dialog.network.NetworkHandler.sendAllDialogsToAllPlayers(new java.util.HashMap<>());
         }
         
