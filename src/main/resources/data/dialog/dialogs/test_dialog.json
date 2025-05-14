@@ -109,7 +109,7 @@
         },
         {
           "visibility_command": "execute if entity @s[gamemode=survival]",
-          "text": "隐藏对话",
+          "text": {"translate": "dialog.test_dialog.option.hidden_option"},
           "target": "more_info"
         }
       ]

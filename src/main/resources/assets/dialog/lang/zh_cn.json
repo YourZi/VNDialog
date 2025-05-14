@@ -61,6 +61,7 @@
 
   "dialog.test_dialog.option.more_info": "了解更多关于对话系统的信息",
   "dialog.test_dialog.option.end_dialog": "结束对话",
+  "dialog.test_dialog.option.hidden_option": "隐藏选项，仅有生存模式下的玩家可见",
   "dialog.test_dialog.option.weather_rain": "天气调为雨天",
   "dialog.test_dialog.option.weather_clear": "天气调为晴天",
   "dialog.test_dialog.option.weather_thunder": "天气调为雷雨"

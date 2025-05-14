@@ -60,6 +60,7 @@
 
   "dialog.test_dialog.option.more_info": "Learn more about the dialog system",
   "dialog.test_dialog.option.end_dialog": "End dialog",
+  "dialog.test_dialog.option.hidden_option": "Hidden option, only visible to players in survival mode",
   "dialog.test_dialog.option.weather_rain": "Set weather to rain",
   "dialog.test_dialog.option.weather_clear": "Set weather to clear",
   "dialog.test_dialog.option.weather_thunder": "Set weather to thunder"
