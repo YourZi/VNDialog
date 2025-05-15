@@ -15,17 +15,6 @@
       ],
       "portraits": [
         {"path": "tlipoca.png", "position": "RIGHT", "brightness": 1.0, "animationType": "FADE_IN"}
-      ],
-      "display_items":[
-        {
-        "item": "minecraft:apple",
-        "count": 16
-        },
-        {
-        "item": "minecraft:diamond_sword",
-        "count": 1,
-        "nbt": "{Damage: 50, Enchantments:[{lvl: 255s, id: \"minecraft:sharpness\"}]}"
-        }
       ]
     },
     {
@@ -155,6 +144,25 @@
           "text": {"translate": "dialog.test_dialog.option.weather_thunder"},
           "target": "end",
           "command": "weather thunder"
+        }
+      ]
+    },
+    {
+      "id": "item",
+      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+      "text": {"translate": "dialog.test_dialog.entry.item.text"},
+      "portraits": [
+        {"path": "tlipoca.png"}
+      ],
+      "display_items":[
+        {
+        "item": "minecraft:apple",
+        "count": 16
+        },
+        {
+        "item": "minecraft:diamond_sword",
+        "count": 1,
+        "nbt": "{Damage: 50, Enchantments:[{lvl: 255s, id: \"minecraft:sharpness\"}]}"
         }
       ]
     },

@@ -56,6 +56,7 @@
   "dialog.test_dialog.entry.8.text": "Of course, you can also customize branch options. Now you can choose what to do next:",
   "dialog.test_dialog.entry.more_info.text": "The two buttons in the bottom right are for auto-play and history. Also, if you want to skip the plot, long-press the Ctrl key to quickly skip dialog to the options.",
   "dialog.test_dialog.entry.command.text": "You can also execute specific commands after selecting an option or after a line of dialog, to trigger events or change affection levels, etc. Here’s an example using weather changes:",
+  "dialog.test_dialog.entry.item.text": "Rendered items can be customized at the top of the dialog, including NBT and quantity.",
   "dialog.test_dialog.entry.end.text": "Thank you for using this mod! Use the /dialog show test_dialog command to open this dialog again.",
 
   "dialog.test_dialog.option.more_info": "Learn more about the dialog system",

@@ -57,11 +57,12 @@
   "dialog.test_dialog.entry.8.text": "当然也可以自定义分支选项。现在你可以选择接下来要做什么：",
   "dialog.test_dialog.entry.more_info.text": "右下角两个按钮分别是自动播放和历史记录按钮。以及如果想跳过剧情，长按Ctrl键就可以快速跳过对话到选项位置。",
   "dialog.test_dialog.entry.command.text": "还可以在选项选择后或者某一句话结束后执行特定的命令，用于触发事件或者好感度增减等。这里拿修改天气举例子：",
+  "dialog.test_dialog.entry.item.text": "可以在对话框上方自定义渲染的物品，包括NBT和数量。",
   "dialog.test_dialog.entry.end.text": "感谢使用本模组！使用/dialog show test_dialog命令可以再次打开这个对话。",
 
   "dialog.test_dialog.option.more_info": "了解更多关于对话系统的信息",
   "dialog.test_dialog.option.end_dialog": "结束对话",
-  "dialog.test_dialog.option.hidden_option": "隐藏选项，仅有生存模式下的玩家可见",
+  "dialog.test_dialog.option.hidden_option": "这是隐藏条件选项，仅有生存模式下的玩家可见",
   "dialog.test_dialog.option.weather_rain": "天气调为雨天",
   "dialog.test_dialog.option.weather_clear": "天气调为晴天",
   "dialog.test_dialog.option.weather_thunder": "天气调为雷雨"
