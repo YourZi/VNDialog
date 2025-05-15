@@ -58,6 +58,7 @@
   "dialog.test_dialog.entry.command.text": "You can also execute specific commands after selecting an option or after a line of dialog, to trigger events or change affection levels, etc. Here’s an example using weather changes:",
   "dialog.test_dialog.entry.item.text": "Rendered items can be customized at the top of the dialog, including NBT and quantity.",
   "dialog.test_dialog.entry.end.text": "Thank you for using this mod! Use the /dialog show test_dialog command to open this dialog again.",
+  "dialog.test_dialog.entry.hidden_entry.text": "This entry is hidden from players in survival mode",
 
   "dialog.test_dialog.option.more_info": "Learn more about the dialog system",
   "dialog.test_dialog.option.end_dialog": "End dialog",

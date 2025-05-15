@@ -133,17 +133,17 @@
       "options": [
         {
           "text": {"translate": "dialog.test_dialog.option.weather_rain"},
-          "target": "end",
+          "target": "item",
           "command": "weather rain"
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_clear"},
-          "target": "end",
+          "target": "item",
           "command": "weather clear"
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_thunder"},
-          "target": "end",
+          "target": "item",
           "command": "weather thunder"
         }
       ]
@@ -165,6 +165,15 @@
         "count": 1,
         "nbt": "{Damage: 50, Enchantments:[{lvl: 255s, id: \"minecraft:sharpness\"}]}"
         }
+      ]
+    },
+    {
+      "id": "hidden_entry",
+      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+      "visibility_command": "execute if entity @s[gamemode=survival]",
+      "text": {"translate": "dialog.test_dialog.entry.hidden_entry.text"},
+      "portraits": [
+        {"path": "tlipoca_1.png"}
       ]
     },
   {

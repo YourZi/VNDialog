@@ -59,6 +59,7 @@
   "dialog.test_dialog.entry.command.text": "还可以在选项选择后或者某一句话结束后执行特定的命令，用于触发事件或者好感度增减等。这里拿修改天气举例子：",
   "dialog.test_dialog.entry.item.text": "可以在对话框上方自定义渲染的物品，包括NBT和数量。",
   "dialog.test_dialog.entry.end.text": "感谢使用本模组！使用/dialog show test_dialog命令可以再次打开这个对话。",
+  "dialog.test_dialog.entry.hidden_entry.text": "这是一个隐藏条件对话，只有生存模式下的玩家可见",
 
   "dialog.test_dialog.option.more_info": "了解更多关于对话系统的信息",
   "dialog.test_dialog.option.end_dialog": "结束对话",
