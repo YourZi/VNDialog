@@ -1,138 +1,65 @@
 package top.yourzi.dialog.ui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.registries.ForgeRegistries;
+import org.lwjgl.glfw.GLFW;
 import top.yourzi.dialog.Config;
 import top.yourzi.dialog.Dialog;
 import top.yourzi.dialog.DialogManager;
-import top.yourzi.dialog.model.DialogEntry;
-import top.yourzi.dialog.model.DialogOption;
-import top.yourzi.dialog.model.DialogSequence;
-import top.yourzi.dialog.model.PortraitAnimationType;
-import top.yourzi.dialog.model.PortraitPosition;
+import top.yourzi.dialog.model.*;
+import top.yourzi.dialog.util.STBBackendImage;
 
-import org.antlr.v4.parse.ANTLRParser.parserRule_return;
-import org.lwjgl.glfw.GLFW;
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.packs.resources.Resource;
-
-import java.util.HashMap;
-import java.util.Optional;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import net.minecraft.client.gui.components.Button;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import net.minecraft.client.gui.screens.ConfirmScreen;
-import top.yourzi.dialog.util.STBBackendImage;
-// Add new imports here
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.TagParser;
-import top.yourzi.dialog.model.DisplayItemInfo; // Assuming this path is correct
+import java.util.Optional;
 
 /**
  * 对话界面，用于显示对话框和立绘
  */
+@SuppressWarnings("removal")
 public class DialogScreen extends Screen {
-    //存储每个立绘的显示数据
-    private static class PortraitDisplayData {
-        ResourceLocation resourceLocation;
-        int actualWidth;
-        int actualHeight;
-        float brightness = 1.0f;
-        PortraitPosition position;
-        PortraitAnimationType animationType = PortraitAnimationType.NONE;
-        long animationStartTime = -1;
-        boolean loadedSuccessfully = false;
-
-        private final static HashMap<ResourceLocation, BufferedImage> CACHED = new HashMap<>();
-
-        PortraitDisplayData(String path, float brightness, PortraitPosition position, PortraitAnimationType animationType) {
-            if (path != null && !path.isEmpty()) {
-                this.resourceLocation = new ResourceLocation(Dialog.MODID, String.format("textures/portraits/%s", path));
-                this.brightness = brightness;
-                this.position = position != null ? position : PortraitPosition.RIGHT; // 位置
-                this.animationType = animationType != null ? animationType : PortraitAnimationType.NONE; // 动画类型
-                loadDimensions();
-                if (Config.ENABLE_PORTRAIT_ANIMATIONS.get() && loadedSuccessfully && this.animationType != PortraitAnimationType.NONE) {
-                    this.animationStartTime = System.currentTimeMillis();
-                }
-            } else {
-                Dialog.LOGGER.warn("Portrait path is null or empty. Cannot load portrait.");
-            }
-        }
-
-        private void loadDimensions() {
-            if (this.resourceLocation == null) return;
-            var target_bufferedimage = CACHED.get(this.resourceLocation);
-            if (target_bufferedimage == null) {
-                try {
-                    Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(this.resourceLocation);
-                    if (resourceOptional.isPresent()) {
-                        try (final var inputStream = resourceOptional.get().open()) {
-                            target_bufferedimage = STBBackendImage.read(inputStream);
-                            this.actualWidth = target_bufferedimage.getWidth();
-                            this.actualHeight = target_bufferedimage.getHeight();
-                            this.loadedSuccessfully = true;
-                            CACHED.put(this.resourceLocation, target_bufferedimage);
-                        }
-                    } else {
-                        Dialog.LOGGER.warn("Portrait resource not found: {}.", this.resourceLocation);
-                    }
-                } catch (IOException e) {
-                    Dialog.LOGGER.error("Error reading portrait image {}: {}.", this.resourceLocation, e.getMessage());
-                } catch (Exception e) {
-                    Dialog.LOGGER.error("Unexpected error loading portrait image {}: {}.", this.resourceLocation, e.getMessage());
-                }
-            } else {
-                this.actualWidth = target_bufferedimage.getWidth();
-                this.actualHeight = target_bufferedimage.getHeight();
-                this.loadedSuccessfully = true;
-            }
-        }
-    }
-
+    private static final int ANIMATION_DURATION_MS = 300; // 动画持续时间，单位毫秒
     // 对话序列和当前对话条目
     private final DialogSequence dialogSequence;
     private final DialogEntry dialogEntry;
-
+    // 选项按钮列表
+    private final List<OptionButton> optionButtons = new ArrayList<>();
+    // 玩家名称
+    private final String playerName;
+    //立绘数据列表
+    private final List<PortraitDisplayData> portraitDisplayList = new ArrayList<>();
+    // 需要在对话中显示的物品列表
+    private final List<ItemStack> displayItemStacks = new ArrayList<>();
     // 对话框位置和大小
     private int dialogBoxX;
     private int dialogBoxY;
     private int dialogBoxWidth;
     private int dialogBoxHeight;
-
-    // 选项按钮列表
-    private final List<OptionButton> optionButtons = new ArrayList<>();
-
-    // 玩家名称
-    private final String playerName;
-
-    //立绘数据列表
-    private final List<PortraitDisplayData> portraitDisplayList = new ArrayList<>();
-    // 需要在对话中显示的物品列表
-    private final List<ItemStack> displayItemStacks = new ArrayList<>();
-
-    private static final int ANIMATION_DURATION_MS = 300; // 动画持续时间，单位毫秒
-
     // 文本动画相关
     private int currentCharIndex = 0;
     private long lastCharTime = 0;
     private boolean textFullyDisplayed = false;
-
     // 快速跳过相关
     private int fastForwardCooldown = 0;
     private boolean optionButtonsCreated = false; // 标记选项按钮是否已为当前条目创建
-
     // 对话历史记录界面相关
     private boolean showingHistory = false;
     private int historyScrollOffset = 0;
@@ -140,12 +67,10 @@ public class DialogScreen extends Screen {
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
-
     // 滚动条相关
     private int totalHistoryContentHeight = 0;
     private boolean canScrollHistoryDown = false;
     private boolean canScrollHistoryUp = false;
-
     public DialogScreen(DialogSequence dialogSequence, DialogEntry dialogEntry, String playerName) {
         super(dialogEntry.getSpeaker(playerName) != null ? dialogEntry.getSpeaker(playerName) : Component.empty());
         this.dialogSequence = dialogSequence;
@@ -158,10 +83,10 @@ public class DialogScreen extends Screen {
             for (top.yourzi.dialog.model.PortraitInfo portraitInfo : dialogEntry.getPortraits()) {
                 if (portraitInfo.getPath() != null && !portraitInfo.getPath().isEmpty()) {
                     PortraitDisplayData displayData = new PortraitDisplayData(
-                        portraitInfo.getPath(),
-                        portraitInfo.getBrightness(),
-                        portraitInfo.getPosition(),
-                        portraitInfo.getAnimationType() // 传递动画类型
+                            portraitInfo.getPath(),
+                            portraitInfo.getBrightness(),
+                            portraitInfo.getPosition(),
+                            portraitInfo.getAnimationType() // 传递动画类型
                     );
                     if (displayData.loadedSuccessfully) {
                         this.portraitDisplayList.add(displayData);
@@ -214,7 +139,7 @@ public class DialogScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        
+
         // 设置对话框位置和大小
         dialogBoxWidth = Config.DIALOG_BOX_WIDTH.get();
         dialogBoxHeight = Config.DIALOG_BOX_HEIGHT.get();
@@ -227,9 +152,9 @@ public class DialogScreen extends Screen {
         int historyButtonPadding = 5;
         this.viewHistoryButton = Button.builder(Component.literal("▲"), (button) -> {
             toggleHistoryScreen();
-        }).bounds(dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding, 
-                  dialogBoxY + dialogBoxHeight - historyButtonHeight - historyButtonPadding, 
-                  historyButtonWidth, historyButtonHeight).build();
+        }).bounds(dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding,
+                dialogBoxY + dialogBoxHeight - historyButtonHeight - historyButtonPadding,
+                historyButtonWidth, historyButtonHeight).build();
         this.addRenderableWidget(this.viewHistoryButton);
 
         // 初始化自动播放按钮 (位于历史记录按钮左侧)
@@ -237,12 +162,12 @@ public class DialogScreen extends Screen {
         int autoPlayButtonHeight = 20;
         this.autoPlayButton = Button.builder(Component.literal("▶"), (button) -> {
             toggleAutoPlay();
-        }).bounds(dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding - autoPlayButtonWidth - historyButtonPadding, 
-                  dialogBoxY + dialogBoxHeight - autoPlayButtonHeight - historyButtonPadding, 
-                  autoPlayButtonWidth, autoPlayButtonHeight).build();
+        }).bounds(dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding - autoPlayButtonWidth - historyButtonPadding,
+                dialogBoxY + dialogBoxHeight - autoPlayButtonHeight - historyButtonPadding,
+                autoPlayButtonWidth, autoPlayButtonHeight).build();
         this.addRenderableWidget(this.autoPlayButton);
         updateAutoPlayButtonText(); // 初始化按钮文本
-        
+
         // 如果此对话条目有选项，预先停止自动播放
         if (dialogEntry.hasOptions()) {
             if (DialogManager.isAutoPlaying()) {
@@ -258,28 +183,28 @@ public class DialogScreen extends Screen {
         }).bounds(this.width / 2 - 50, this.height - 30, 100, 20).build();
 
     }
-    
+
     /**
      * 创建对话选项按钮
      */
     private void createOptionButtons() {
         optionButtons.clear();
-        
+
         DialogOption[] options = dialogEntry.getOptions();
         if (options == null || options.length == 0) {
             return;
         }
-        
+
         int buttonWidth = 200;
         int buttonHeight = 20;
         int buttonSpacing = 5;
         int totalHeight = options.length * (buttonHeight + buttonSpacing) - buttonSpacing;
         int startY = dialogBoxY - totalHeight - 10;
-        
+
         for (int i = 0; i < options.length; i++) {
             DialogOption option = options[i];
             int buttonY = startY + i * (buttonHeight + buttonSpacing);
-            
+
             OptionButton button = new OptionButton(
                     (width - buttonWidth) / 2,
                     buttonY,
@@ -295,14 +220,12 @@ public class DialogScreen extends Screen {
                         DialogManager.getInstance().jumpToDialog(option.getTargetId());
                     }
             );
-            
+
             optionButtons.add(button);
             addRenderableWidget(button);
         }
     }
 
-
-    
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 
@@ -390,8 +313,8 @@ public class DialogScreen extends Screen {
                             break;
                     }
 
-                    int finalX = baseX + (int)xOffset;
-                    int finalY = baseY + (int)yOffset;
+                    int finalX = baseX + (int) xOffset;
+                    int finalY = baseY + (int) yOffset;
 
                     guiGraphics.blit(displayData.resourceLocation, finalX, finalY, 0, 0, scaledWidth, scaledHeight, scaledWidth, scaledHeight);
                     RenderSystem.disableBlend();
@@ -405,7 +328,7 @@ public class DialogScreen extends Screen {
         if (backgroundImagePath != null && !backgroundImagePath.isEmpty()) {
             try {
                 ResourceLocation dialogBgRl = new ResourceLocation(Dialog.MODID, backgroundImagePath);
-                
+
                 RenderSystem.setShader(GameRenderer::getPositionTexShader); // 确保使用正确的着色器
                 RenderSystem.setShaderTexture(0, dialogBgRl); // 绑定纹理
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F); // 重置颜色，确保图片不受先前渲染影响
@@ -414,7 +337,7 @@ public class DialogScreen extends Screen {
 
                 // 将图片拉伸至对话框大小进行渲染
                 guiGraphics.blit(dialogBgRl, dialogBoxX, dialogBoxY, 0, 0.0F, 0.0F, dialogBoxWidth, dialogBoxHeight, dialogBoxWidth, dialogBoxHeight);
-                
+
                 RenderSystem.disableBlend(); // 绘制完毕后禁用混合
             } catch (Exception e) {
                 Dialog.LOGGER.error("Failed to render dialog background image: " + backgroundImagePath + ". Falling back to solid color.", e);
@@ -439,19 +362,19 @@ public class DialogScreen extends Screen {
             // 将提示显示在对话框的右上角外部一点或者左上角，避免遮挡按钮
             guiGraphics.drawString(this.font, autoPlayText, dialogBoxX + dialogBoxWidth - autoPlayTextWidth - 5, dialogBoxY - 15, 0xFFFFFF);
         }
-        
+
         // 渲染对话文本
         int padding = Config.DIALOG_BOX_PADDING.get();
         int textX = dialogBoxX + padding;
         int textY = dialogBoxY + padding;
-        
+
         // 如果显示说话者名称且有说话者
         Component speakerComponent = dialogEntry.getSpeaker(playerName);
         if (Config.SHOW_SPEAKER_NAME.get() && speakerComponent != null && !speakerComponent.getString().isEmpty()) {
             guiGraphics.drawString(font, speakerComponent, textX, textY, 0xFFFFFF);
             textY += font.lineHeight + 5;
         }
-        
+
         // 渲染对话文本
         String rawText = dialogEntry.getText(playerName).getString();
         if (rawText != null && !rawText.isEmpty()) {
@@ -470,7 +393,7 @@ public class DialogScreen extends Screen {
                 }
                 // 计算每字符间隔时间 (毫秒)
                 long charInterval = (textAnimationSpeed > 0) ? (1000 / textAnimationSpeed) : 0;
-                
+
                 if (currentTime - lastCharTime >= charInterval) {
                     currentCharIndex++;
                     lastCharTime = currentTime;
@@ -482,36 +405,36 @@ public class DialogScreen extends Screen {
                 }
             }
 
-        // 渲染对话中展示的物品
-        if (!this.displayItemStacks.isEmpty() && textFullyDisplayed) {
-            int itemSize = 16;
-            int itemPadding = 4;
-            int totalItemWidth = (this.displayItemStacks.size() * itemSize) + (Math.max(0, this.displayItemStacks.size() - 1) * itemPadding);
+            // 渲染对话中展示的物品
+            if (!this.displayItemStacks.isEmpty() && textFullyDisplayed) {
+                int itemSize = 16;
+                int itemPadding = 4;
+                int totalItemWidth = (this.displayItemStacks.size() * itemSize) + (Math.max(0, this.displayItemStacks.size() - 1) * itemPadding);
 
-            int startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
-            int itemY = dialogBoxY - itemSize - 5;
+                int startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
+                int itemY = dialogBoxY - itemSize - 5;
 
-            for (ItemStack itemStack : this.displayItemStacks) {
+                for (ItemStack itemStack : this.displayItemStacks) {
 
-                guiGraphics.renderItem(itemStack, startX, itemY);
+                    guiGraphics.renderItem(itemStack, startX, itemY);
 
-                if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
-                    guiGraphics.fill(startX, itemY, startX + itemSize, itemY + itemSize, 0x80000000);
+                    if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
+                        guiGraphics.fill(startX, itemY, startX + itemSize, itemY + itemSize, 0x80000000);
+                    }
+
+                    guiGraphics.renderItemDecorations(this.font, itemStack, startX, itemY);
+
+                    startX += itemSize + itemPadding;
                 }
 
-                guiGraphics.renderItemDecorations(this.font, itemStack, startX, itemY);
-
-                startX += itemSize + itemPadding;
-            }
-
-            startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
-            for (ItemStack itemStack : this.displayItemStacks) {
-                if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
-                    guiGraphics.renderTooltip(this.font, itemStack, mouseX, mouseY);
+                startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
+                for (ItemStack itemStack : this.displayItemStacks) {
+                    if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
+                        guiGraphics.renderTooltip(this.font, itemStack, mouseX, mouseY);
+                    }
+                    startX += itemSize + itemPadding;
                 }
-                startX += itemSize + itemPadding;
             }
-        }
 
             // 如果自动播放开启，且文本完全显示，且没有选项，则延迟后自动前进
             if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions()) {
@@ -524,7 +447,7 @@ public class DialogScreen extends Screen {
                     return;
                 }
             }
-            
+
             List<net.minecraft.util.FormattedCharSequence> lines;
             if (textFullyDisplayed) {
                 lines = font.split(dialogEntry.getText(playerName), maxWidth);
@@ -537,7 +460,7 @@ public class DialogScreen extends Screen {
                     lines = font.split(animatedTextComponent, maxWidth);
                 }
             }
-            
+
             for (net.minecraft.util.FormattedCharSequence line : lines) {
                 guiGraphics.drawString(font, line, textX, textY, Config.DIALOG_TEXT_COLOR.get());
                 textY += font.lineHeight;
@@ -564,8 +487,8 @@ public class DialogScreen extends Screen {
 
         // 处理快速跳过
         boolean isCtrlPressed = Minecraft.getInstance().getWindow() != null &&
-                                (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS ||
-                                 GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS);
+                (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS ||
+                        GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS);
 
         // 如果按下Ctrl键快速跳过，则关闭自动播放
         if (isCtrlPressed && DialogManager.isAutoPlaying()) {
@@ -603,16 +526,18 @@ public class DialogScreen extends Screen {
             } else {
                 // 如果在对话界面，ESC键弹出确认关闭的提示
                 this.minecraft.setScreen(new ConfirmScreen(
-                    this::confirmCloseDialog,
-                    Component.translatable("dialog.ui.esc"), // 确认框标题
-                    Component.translatable("dialog.ui.confirm_esc") // 确认框消息
+                        this::confirmCloseDialog,
+                        Component.translatable("dialog.ui.esc"), // 确认框标题
+                        Component.translatable("dialog.ui.confirm_esc") // 确认框消息
                 ));
                 return true; // 事件已处理
             }
         }
 
         // 处理其他键的通用行为
-        if (this.showingHistory) {return false;}
+        if (this.showingHistory) {
+            return false;
+        }
 
         // 当文本完全显示，且没有选项时，按空格键可以手动前进
         if (textFullyDisplayed && !dialogEntry.hasOptions() && (keyCode == GLFW.GLFW_KEY_SPACE)) {
@@ -676,8 +601,8 @@ public class DialogScreen extends Screen {
         if (!showingHistory) {
             // 检查点击是否在对话框边界内
             boolean clickedInDialogBox = button == 0 &&
-                                         dialogBoxX <= mouseX && mouseX <= dialogBoxX + dialogBoxWidth &&
-                                         dialogBoxY <= mouseY && mouseY <= dialogBoxY + dialogBoxHeight;
+                    dialogBoxX <= mouseX && mouseX <= dialogBoxX + dialogBoxWidth &&
+                    dialogBoxY <= mouseY && mouseY <= dialogBoxY + dialogBoxHeight;
 
             if (clickedInDialogBox) {
                 if (!textFullyDisplayed) {
@@ -700,7 +625,7 @@ public class DialogScreen extends Screen {
                 }
             }
         }
-        
+
         return false; // 除了 widgets 或对话推进之外没有自定义处理
     }
 
@@ -725,8 +650,8 @@ public class DialogScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        updateAutoPlayButtonText(); 
-    
+        updateAutoPlayButtonText();
+
         if (this.showingHistory) {
             this.historyEntries = DialogManager.getInstance().getDialogHistory();
             // 禁用主对话界面按钮
@@ -734,10 +659,10 @@ public class DialogScreen extends Screen {
             if (this.viewHistoryButton != null) { // 确保按钮已初始化
                 this.viewHistoryButton.active = false;
             }
-            
+
             // 激活并添加关闭历史按钮
             if (!this.children().contains(this.closeHistoryButton)) {
-                 this.addRenderableWidget(this.closeHistoryButton);
+                this.addRenderableWidget(this.closeHistoryButton);
             }
             this.closeHistoryButton.active = true;
 
@@ -747,12 +672,12 @@ public class DialogScreen extends Screen {
             if (this.viewHistoryButton != null) { // 确保按钮已初始化
                 this.viewHistoryButton.active = true;
             }
-            
+
             // 移除关闭历史按钮
             if (this.children().contains(this.closeHistoryButton)) {
                 this.removeWidget(this.closeHistoryButton);
             }
-            this.closeHistoryButton.active = false; 
+            this.closeHistoryButton.active = false;
         }
     }
 
@@ -833,7 +758,7 @@ public class DialogScreen extends Screen {
             } else {
                 lineToRender = dialogText;
             }
-            
+
             int entryStartY = currentY;
             int entryHeight = 0;
 
@@ -855,8 +780,8 @@ public class DialogScreen extends Screen {
                     }
                 }
             } else {
-                 currentY += font.lineHeight + 2;
-                 entryHeight += font.lineHeight + 2;
+                currentY += font.lineHeight + 2;
+                entryHeight += font.lineHeight + 2;
             }
             currentY += 5;
             entryHeight += 5;
@@ -911,14 +836,14 @@ public class DialogScreen extends Screen {
             int scrollbarWidth = 5;
             int scrollbarX = this.width - textPaddingLeft + 20; // 调整到文本区域右侧
             int scrollbarTrackHeight = historyAreaHeight;
-            
+
             // 滚动条背景
-            guiGraphics.fill(scrollbarX, historyAreaTopY, scrollbarX + scrollbarWidth, historyAreaTopY + scrollbarTrackHeight, 0xFF555555); 
+            guiGraphics.fill(scrollbarX, historyAreaTopY, scrollbarX + scrollbarWidth, historyAreaTopY + scrollbarTrackHeight, 0xFF555555);
 
             float scrollPercentage = (float) historyScrollOffset / (totalHistoryContentHeight - historyAreaHeight);
             int scrollThumbHeight = Math.max(20, (int) ((float) historyAreaHeight / totalHistoryContentHeight * historyAreaHeight));
             int scrollThumbY = historyAreaTopY + (int) (scrollPercentage * (scrollbarTrackHeight - scrollThumbHeight));
-            
+
             guiGraphics.fill(scrollbarX, scrollThumbY, scrollbarX + scrollbarWidth, scrollThumbY + scrollThumbHeight, 0xFFAAAAAA);
         }
     }
@@ -934,5 +859,62 @@ public class DialogScreen extends Screen {
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, delta);
+    }
+
+    //存储每个立绘的显示数据
+    private static class PortraitDisplayData {
+        private final static HashMap<ResourceLocation, BufferedImage> CACHED = new HashMap<>();
+        ResourceLocation resourceLocation;
+        int actualWidth;
+        int actualHeight;
+        float brightness = 1.0f;
+        PortraitPosition position;
+        PortraitAnimationType animationType = PortraitAnimationType.NONE;
+        long animationStartTime = -1;
+        boolean loadedSuccessfully = false;
+
+        PortraitDisplayData(String path, float brightness, PortraitPosition position, PortraitAnimationType animationType) {
+            if (path != null && !path.isEmpty()) {
+                this.resourceLocation = new ResourceLocation(Dialog.MODID, String.format("textures/portraits/%s", path));
+                this.brightness = brightness;
+                this.position = position != null ? position : PortraitPosition.RIGHT; // 位置
+                this.animationType = animationType != null ? animationType : PortraitAnimationType.NONE; // 动画类型
+                loadDimensions();
+                if (Config.ENABLE_PORTRAIT_ANIMATIONS.get() && loadedSuccessfully && this.animationType != PortraitAnimationType.NONE) {
+                    this.animationStartTime = System.currentTimeMillis();
+                }
+            } else {
+                Dialog.LOGGER.warn("Portrait path is null or empty. Cannot load portrait.");
+            }
+        }
+
+        private void loadDimensions() {
+            if (this.resourceLocation == null) return;
+            var target_bufferedimage = CACHED.get(this.resourceLocation);
+            if (target_bufferedimage == null) {
+                try {
+                    Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(this.resourceLocation);
+                    if (resourceOptional.isPresent()) {
+                        try (final var inputStream = resourceOptional.get().open()) {
+                            target_bufferedimage = STBBackendImage.read(inputStream);
+                            this.actualWidth = target_bufferedimage.getWidth();
+                            this.actualHeight = target_bufferedimage.getHeight();
+                            this.loadedSuccessfully = true;
+                            CACHED.put(this.resourceLocation, target_bufferedimage);
+                        }
+                    } else {
+                        Dialog.LOGGER.warn("Portrait resource not found: {}.", this.resourceLocation);
+                    }
+                } catch (IOException e) {
+                    Dialog.LOGGER.error("Error reading portrait image {}: {}.", this.resourceLocation, e.getMessage());
+                } catch (Exception e) {
+                    Dialog.LOGGER.error("Unexpected error loading portrait image {}: {}.", this.resourceLocation, e.getMessage());
+                }
+            } else {
+                this.actualWidth = target_bufferedimage.getWidth();
+                this.actualHeight = target_bufferedimage.getHeight();
+                this.loadedSuccessfully = true;
+            }
+        }
     }
 }

@@ -6,6 +6,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import java.util.Map;
@@ -15,19 +18,19 @@ import java.util.ArrayList;
 /**
  * 表示对话中的选项。
  */
+
+@Builder
 public class DialogOption {
     // 选项显示的文本，可以是字符串或文本组件JSON对象
     private JsonElement text;
     // 选择此选项后跳转到的对话ID
+    @Getter
     @SerializedName("target")
     private String targetId;
 
     // 缓存的文本组件
     private transient Component cachedTextComponent;
-    
-    public DialogOption() {
-    }
-    
+
     public Component getText(String playerName) {
         return placeHolderReplace("@i", playerName, this.text);
     }
@@ -53,37 +56,21 @@ public class DialogOption {
 
         return newComponent;
     }
-    
-    public String getTargetId() {
-        return targetId;
-    }
-    
+
     public void setTargetId(String targetId) {
         this.targetId = targetId;
     }
 
     // 选择该选项后执行的命令
+    @Getter
+    @Setter
     private String command;
 
     // 控制该选项是否可见的指令
+    @Getter
+    @Setter
     @SerializedName("visibility_command")
     private String visibilityCommand;
-
-    public String getCommand() {
-        return command;
-    }
-
-    public void setCommand(String command) {
-        this.command = command;
-    }
-
-    public String getVisibilityCommand() {
-        return visibilityCommand;
-    }
-
-    public void setVisibilityCommand(String visibilityCommand) {
-        this.visibilityCommand = visibilityCommand;
-    }
 
 
     private Component placeHolderReplace(String fromString, String toString, JsonElement targetElement) {

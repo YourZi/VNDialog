@@ -1,10 +1,14 @@
 package top.yourzi.dialog.model;
 
 import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 表示一个完整的对话序列，通常对应一个JSON文件。
  */
+@Setter
+@Getter
 public class DialogSequence {
     // 对话序列的唯一标识符
     private String id;
@@ -17,49 +21,7 @@ public class DialogSequence {
     // 对话序列的起始对话ID，如果为空则从第一个条目开始
     @SerializedName("start")
     private String startId;
-    
-    public DialogSequence() {}
-    
-    public String getId() {
-        return id;
-    }
-    
-    public void setId(String id) {
-        this.id = id;
-    }
-    
-    public String getTitle() {
-        return title;
-    }
-    
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public DialogEntry[] getEntries() {
-        return entries;
-    }
-    
-    public void setEntries(DialogEntry[] entries) {
-        this.entries = entries;
-    }
-    
-    public String getStartId() {
-        return startId;
-    }
-    
-    public void setStartId(String startId) {
-        this.startId = startId;
-    }
-    
+
     /**
      * 获取对话序列的第一个对话条目。
      * @return 第一个对话条目；如果序列为空或未定义起始ID且无条目，则返回null。
