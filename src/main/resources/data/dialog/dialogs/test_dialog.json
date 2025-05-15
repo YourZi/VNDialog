@@ -24,7 +24,8 @@
       "portraits": [
         {"path": "leaf.png", "position": "LEFT", "brightness": 1.0},
         {"path": "tlipoca.png", "position": "RIGHT", "brightness": 0.5}
-      ]
+      ],
+      "next": "2"
     },
     {
       "id": "2",

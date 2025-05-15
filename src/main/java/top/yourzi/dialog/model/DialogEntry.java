@@ -35,6 +35,10 @@ public class DialogEntry {
     // 该对话条目完成后执行的命令
     private String command;
 
+    // 该对话条目的可见性命令
+    @SerializedName("visibility_command")
+    private String visibilityCommand;
+
     // 需要在对话中显示的物品列表
     @SerializedName("display_items")
     private List<DisplayItemInfo> displayItems;
@@ -173,6 +177,14 @@ public class DialogEntry {
 
     public void setDisplayItems(List<DisplayItemInfo> displayItems) {
         this.displayItems = displayItems;
+    }
+
+    public String getVisibilityCommand() {
+        return visibilityCommand;
+    }
+
+    public void setVisibilityCommand(String visibilityCommand) {
+        this.visibilityCommand = visibilityCommand;
     }
 
     private boolean performDeepPlaceholderReplace(JsonObject jsonObject, String placeholder, String replacement) {

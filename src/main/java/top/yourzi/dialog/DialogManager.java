@@ -298,39 +298,61 @@ public class DialogManager {
             return playerSpecificSequence;
         }
 
+        List<DialogEntry> visibleEntries = new ArrayList<>();
+        CommandSourceStack commandSource = player.createCommandSourceStack()
+            .withPermission(server.getOperatorUserPermissionLevel())
+            .withSuppressedOutput();
+
         for (DialogEntry entry : playerSpecificSequence.getEntries()) {
-            if (entry == null || !entry.hasOptions()) {
+            if (entry == null) {
                 continue;
             }
 
-            List<DialogOption> visibleOptions = new ArrayList<>();
-
-            CommandSourceStack commandSource = player.createCommandSourceStack()
-                .withPermission(server.getOperatorUserPermissionLevel())
-                .withSuppressedOutput();
-
-            for (DialogOption option : entry.getOptions()) {
-                String visibilityCommand = option.getVisibilityCommand();
-                if (visibilityCommand == null || visibilityCommand.isEmpty()) {
-                    visibleOptions.add(option);
-                    continue;
-                }
-
+            // 检查条目本身的可见性命令
+            String entryVisibilityCommand = entry.getVisibilityCommand();
+            if (entryVisibilityCommand != null && !entryVisibilityCommand.isEmpty()) {
                 try {
-                    int result = server.getCommands().performPrefixedCommand(commandSource, visibilityCommand);
-                    if (result == 1) {
-                        visibleOptions.add(option);
-                    } else {
-                        Dialog.LOGGER.debug("Visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {} returned {}, option hidden.",
-                                           visibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), result);
+                    int result = server.getCommands().performPrefixedCommand(commandSource, entryVisibilityCommand);
+                    if (result != 1) {
+                        Dialog.LOGGER.debug("Visibility command '{}' for entry '{}' (dialog '{}') for player {} returned {}, entry hidden.",
+                                           entryVisibilityCommand, entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), result);
+                        continue; // 跳过此条目，不添加到 visibleEntries
                     }
                 } catch (Exception e) {
-                    Dialog.LOGGER.warn("Error executing visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {}: {}. Option hidden.",
-                                       visibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
+                    Dialog.LOGGER.warn("Error executing visibility command '{}' for entry '{}' (dialog '{}') for player {}: {}. Entry hidden.",
+                                       entryVisibilityCommand, entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage());
+                    continue; // 出错则隐藏条目
                 }
             }
-            entry.setOptions(visibleOptions.toArray(new DialogOption[0]));
+
+            // 如果条目可见，再处理其选项的可见性
+            if (entry.hasOptions()) {
+                List<DialogOption> visibleOptions = new ArrayList<>();
+                for (DialogOption option : entry.getOptions()) {
+                    String optionVisibilityCommand = option.getVisibilityCommand();
+                    if (optionVisibilityCommand == null || optionVisibilityCommand.isEmpty()) {
+                        visibleOptions.add(option);
+                        continue;
+                    }
+
+                    try {
+                        int result = server.getCommands().performPrefixedCommand(commandSource, optionVisibilityCommand);
+                        if (result == 1) {
+                            visibleOptions.add(option);
+                        } else {
+                            Dialog.LOGGER.debug("Visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {} returned {}, option hidden.",
+                                               optionVisibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), result);
+                        }
+                    } catch (Exception e) {
+                        Dialog.LOGGER.warn("Error executing visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {}: {}. Option hidden.",
+                                           optionVisibilityCommand, option.getText(player.getName().getString()) != null ? option.getText(player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
+                    }
+                }
+                entry.setOptions(visibleOptions.toArray(new DialogOption[0]));
+            }
+            visibleEntries.add(entry); // 将可见的条目（及其处理过的选项）添加到列表
         }
+        playerSpecificSequence.setEntries(visibleEntries.toArray(new DialogEntry[0]));
         return playerSpecificSequence;
     }
     
