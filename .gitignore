@@ -120,4 +120,8 @@ runs/
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
 /src/generated/resources/.cache/
+<<<<<<< HEAD
 /run-data/
+=======
+/run-data/
+>>>>>>> f7a9a8113c14945dbd5ce45b8e12872606077300

@@ -17,8 +17,7 @@ public class Dialog {
     public static final String MODID = "dialog";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-
-    
+    @SuppressWarnings("removal")
     public Dialog() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 

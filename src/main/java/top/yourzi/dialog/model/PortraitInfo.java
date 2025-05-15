@@ -1,7 +1,11 @@
 package top.yourzi.dialog.model;
 
 import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 public class PortraitInfo {
     @SerializedName("path")
     private String path; // 图片路径
@@ -25,35 +29,4 @@ public class PortraitInfo {
         this.animationType = animationType;
     }
 
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public PortraitPosition getPosition() {
-        return position;
-    }
-
-    public void setPosition(PortraitPosition position) {
-        this.position = position;
-    }
-
-    public float getBrightness() {
-        return brightness;
-    }
-
-    public void setBrightness(float brightness) {
-        this.brightness = brightness;
-    }
-
-    public PortraitAnimationType getAnimationType() {
-        return animationType;
-    }
-
-    public void setAnimationType(PortraitAnimationType animationType) {
-        this.animationType = animationType;
-    }
 }

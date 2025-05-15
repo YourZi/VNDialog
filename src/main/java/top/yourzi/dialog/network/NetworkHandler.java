@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 /**
  * 网络包处理器，用于服务端和客户端之间的通信
  */
+@SuppressWarnings("removal")
 public class NetworkHandler {
     private static final String PROTOCOL_VERSION = "1.0";
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
