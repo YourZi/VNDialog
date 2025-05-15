@@ -90,6 +90,7 @@
   "id": "unique_entry_id",
   "speaker": "Speaker Name",
   "text": "Dialog text.",
+  "next": "entry_id_to_go_to_after_this_entry",
   "portraits": [
     // ... 立绘信息列表 ...
   ],
@@ -103,17 +104,19 @@
 ```
 
 - **`id` (必需)**: `String`
-  - 条目的唯一标识符。用于在 `start` 字段、选项的 `target` 中引用。
+  - 条目的唯一标识符。用于在 `start` 字段、`next` 字段或选项的 `target` 中引用。
 - **`speaker` (可选)**: `String` 或 `Text Component`
   - 说话者的名字或信息。可以是普通字符串或文本组件。
 - **`text` (必需)**: `String` 或 `Text Component`
   - 对话的主要内容。可以是普通字符串或文本组件。
+- **`next` (可选)**: `String`
+  - 当玩家完成此条目的对话后，对话将跳转到的下一个条目的 `id`。
 - **`portraits` (可选)**: 
   - 定义此条目中显示的立绘。
 - **`options` (可选)**:
   - 提供给玩家的选择。如果存在选项，对话将暂停等待玩家选择。
 - **`commands` (可选)**:
-  - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该对话条目显示时立即执行。
+  - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该对话条目结束时，以发起对话的玩家的身份（忽略原本权限，强制以OP权限）执行。
 
 ### 🎨 立绘
 

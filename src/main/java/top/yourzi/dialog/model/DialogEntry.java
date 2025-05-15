@@ -34,6 +34,10 @@ public class DialogEntry {
     private String selectedOptionText;
     // 该对话条目完成后执行的命令
     private String command;
+
+    // 需要在对话中显示的物品列表
+    @SerializedName("display_items")
+    private List<DisplayItemInfo> displayItems;
     
     public DialogEntry() {}
 
@@ -52,9 +56,9 @@ public class DialogEntry {
                 componentAfterJsonProcessing = Component.Serializer.fromJson(jsonObjectCopy);
             } catch (JsonSyntaxException e) {
                 try {
-                    componentAfterJsonProcessing = Component.Serializer.fromJson(targetElement); // Fallback to original
+                    componentAfterJsonProcessing = Component.Serializer.fromJson(targetElement);
                 } catch (JsonSyntaxException e2) {
-                    return Component.empty(); // Both failed
+                    return Component.empty();
                 }
             }
             return replaceTextInComponent(componentAfterJsonProcessing, fromString, pString);
@@ -89,7 +93,7 @@ public class DialogEntry {
         component.visit((style, text) -> {
             String replacedText = text.replace(placeholder, replacement);
             newComponent.append(Component.literal(replacedText).setStyle(style));
-            return java.util.Optional.empty(); // Continue visitation
+            return java.util.Optional.empty();
         }, net.minecraft.network.chat.Style.EMPTY);
 
         return newComponent;
@@ -161,6 +165,14 @@ public class DialogEntry {
 
     public void setCommand(String command) {
         this.command = command;
+    }
+
+    public List<DisplayItemInfo> getDisplayItems() {
+        return displayItems;
+    }
+
+    public void setDisplayItems(List<DisplayItemInfo> displayItems) {
+        this.displayItems = displayItems;
     }
 
     private boolean performDeepPlaceholderReplace(JsonObject jsonObject, String placeholder, String replacement) {

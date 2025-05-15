@@ -30,6 +30,14 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import top.yourzi.dialog.util.STBBackendImage;
+// Add new imports here
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
+import top.yourzi.dialog.model.DisplayItemInfo; // Assuming this path is correct
 
 /**
  * 对话界面，用于显示对话框和立绘
@@ -111,6 +119,8 @@ public class DialogScreen extends Screen {
 
     //立绘数据列表
     private final List<PortraitDisplayData> portraitDisplayList = new ArrayList<>();
+    // 需要在对话中显示的物品列表
+    private final List<ItemStack> displayItemStacks = new ArrayList<>();
 
     private static final int ANIMATION_DURATION_MS = 300; // 动画持续时间，单位毫秒
 
@@ -162,6 +172,36 @@ public class DialogScreen extends Screen {
             }
         } else {
             Dialog.LOGGER.warn("No portrait configurations found in DialogEntry or the list is empty.");
+        }
+
+        // 加载需要在对话中显示的物品
+        if (dialogEntry.getDisplayItems() != null && !dialogEntry.getDisplayItems().isEmpty()) {
+            for (top.yourzi.dialog.model.DisplayItemInfo itemInfo : dialogEntry.getDisplayItems()) {
+                if (itemInfo.getItemId() != null && !itemInfo.getItemId().isEmpty()) {
+                    try {
+                        ResourceLocation itemRl = new ResourceLocation(itemInfo.getItemId());
+                        Item item = ForgeRegistries.ITEMS.getValue(itemRl);
+                        if (item != null && item != Items.AIR) {
+                            ItemStack itemStack = new ItemStack(item, itemInfo.getCount() > 0 ? itemInfo.getCount() : 1);
+                            if (itemInfo.getNbt() != null && !itemInfo.getNbt().isEmpty()) {
+                                try {
+                                    CompoundTag nbtTag = TagParser.parseTag(itemInfo.getNbt());
+                                    itemStack.setTag(nbtTag);
+                                } catch (Exception e) {
+                                    Dialog.LOGGER.error("Error parsing NBT for display item {}: {}. NBT: '{}'", itemInfo.getItemId(), e.getMessage(), itemInfo.getNbt());
+                                }
+                            }
+                            this.displayItemStacks.add(itemStack);
+                        } else {
+                            Dialog.LOGGER.warn("Item not found or is AIR: {}. Skipping display item.", itemInfo.getItemId());
+                        }
+                    } catch (Exception e) {
+                        Dialog.LOGGER.error("Error creating ItemStack for display item {}: {}", itemInfo.getItemId(), e.getMessage());
+                    }
+                } else {
+                    Dialog.LOGGER.warn("Encountered a display item with null or empty itemId.");
+                }
+            }
         }
 
         // 检查是否由快速跳过触发
@@ -442,6 +482,37 @@ public class DialogScreen extends Screen {
                 }
             }
 
+        // 渲染对话中展示的物品
+        if (!this.displayItemStacks.isEmpty() && textFullyDisplayed) {
+            int itemSize = 16;
+            int itemPadding = 4;
+            int totalItemWidth = (this.displayItemStacks.size() * itemSize) + (Math.max(0, this.displayItemStacks.size() - 1) * itemPadding);
+
+            int startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
+            int itemY = dialogBoxY - itemSize - 5;
+
+            for (ItemStack itemStack : this.displayItemStacks) {
+
+                guiGraphics.renderItem(itemStack, startX, itemY);
+
+                if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
+                    guiGraphics.fill(startX, itemY, startX + itemSize, itemY + itemSize, 0x80000000);
+                }
+
+                guiGraphics.renderItemDecorations(this.font, itemStack, startX, itemY);
+
+                startX += itemSize + itemPadding;
+            }
+
+            startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
+            for (ItemStack itemStack : this.displayItemStacks) {
+                if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
+                    guiGraphics.renderTooltip(this.font, itemStack, mouseX, mouseY);
+                }
+                startX += itemSize + itemPadding;
+            }
+        }
+
             // 如果自动播放开启，且文本完全显示，且没有选项，则延迟后自动前进
             if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions()) {
                 if (System.currentTimeMillis() - lastCharTime > Config.AUTO_ADVANCE_DELAY.get()) { // lastCharTime 在文本完全显示后更新
@@ -586,10 +657,6 @@ public class DialogScreen extends Screen {
 
     @Override
     public void onClose() {
-        // 清除当前对话的缓存
-        if (this.dialogSequence != null && this.dialogSequence.getId() != null) {
-            DialogManager.getInstance().clearDialogFromCache(this.dialogSequence.getId());
-        }
         super.onClose(); // 调用父类的onClose，确保屏幕正常关闭
     }
 
