@@ -5,6 +5,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import com.google.gson.JsonObject;
@@ -15,6 +18,9 @@ import java.util.ArrayList;
 /**
  * 表示单条对话的数据模型。
  */
+@Setter
+@Getter
+@Builder
 public class DialogEntry {
     // 对话文本内容，可以是字符串或文本组件JSON对象
     private JsonElement text;
@@ -38,8 +44,6 @@ public class DialogEntry {
     // 需要在对话中显示的物品列表
     @SerializedName("display_items")
     private List<DisplayItemInfo> displayItems;
-    
-    public DialogEntry() {}
 
     public Component placeHolderReplace(String fromString, String toString, JsonElement targetElement) {
         if (targetElement == null || targetElement.isJsonNull()) {
@@ -103,76 +107,12 @@ public class DialogEntry {
         return placeHolderReplace("@i", playerName, text);
     }
 
-    public void setText(JsonElement text) {
-        this.text = text;
-    }
-
     public Component getSpeaker(String playerName) {
         return placeHolderReplace("@i", playerName, speaker);
     }
 
-    public void setSpeaker(JsonElement speaker) {
-        this.speaker = speaker;
-    }
-    
-    public List<PortraitInfo> getPortraits() {
-        return portraits;
-    }
-
-    public void setPortraits(List<PortraitInfo> portraits) {
-        this.portraits = portraits;
-    }
-    
-    public String getId() {
-        return id;
-    }
-    
-    public void setId(String id) {
-        this.id = id;
-    }
-    
-    public String getNextId() {
-        return nextId;
-    }
-    
-    public void setNextId(String nextId) {
-        this.nextId = nextId;
-    }
-    
-    public DialogOption[] getOptions() {
-        return options;
-    }
-    
-    public void setOptions(DialogOption[] options) {
-        this.options = options;
-    }
-    
     public boolean hasOptions() {
         return options != null && options.length > 0;
-    }
-
-    public String getSelectedOptionText() {
-        return selectedOptionText;
-    }
-
-    public void setSelectedOptionText(String selectedOptionText) {
-        this.selectedOptionText = selectedOptionText;
-    }
-
-    public String getCommand() {
-        return command;
-    }
-
-    public void setCommand(String command) {
-        this.command = command;
-    }
-
-    public List<DisplayItemInfo> getDisplayItems() {
-        return displayItems;
-    }
-
-    public void setDisplayItems(List<DisplayItemInfo> displayItems) {
-        this.displayItems = displayItems;
     }
 
     private boolean performDeepPlaceholderReplace(JsonObject jsonObject, String placeholder, String replacement) {
