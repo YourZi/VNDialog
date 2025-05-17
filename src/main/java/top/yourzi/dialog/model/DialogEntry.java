@@ -45,8 +45,8 @@ public class DialogEntry {
     private String visibilityCommand;
 
     // 需要在对话中显示的物品列表
-    //@SerializedName("display_items")
-    //private List<DisplayItemInfo> displayItems;
+    @SerializedName("display_items")
+    private List<DisplayItemInfo> displayItems;
 
     public DialogEntry() {
     }

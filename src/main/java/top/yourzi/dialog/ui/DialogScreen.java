@@ -4,10 +4,17 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.client.event.ContainerScreenEvent.Render;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import top.yourzi.dialog.Config;
 import top.yourzi.dialog.Dialog;
 import top.yourzi.dialog.DialogManager;
@@ -128,6 +135,9 @@ public class DialogScreen extends Screen {
     private Button closeHistoryButton; // 关闭历史记录按钮
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
+
+    // 需要在对话中显示的物品列表
+    private final List<ItemStack> displayItemStacks = new ArrayList<>();
 
     // 滚动条相关
     private int totalHistoryContentHeight = 0;
