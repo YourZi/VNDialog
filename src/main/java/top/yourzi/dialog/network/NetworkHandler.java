@@ -86,19 +86,6 @@ public class NetworkHandler {
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ShowDialogPacket(dialogId, dialogJson));
     }
 
-    // 保留旧方法以兼容，或标记为 @Deprecated
-    @Deprecated
-    public static void sendShowDialogToPlayer(ServerPlayer player, String dialogId) {
-        // 这个旧方法理论上不应该再被直接调用来显示对话，因为它不包含过滤后的对话数据。
-        // 它可以被修改为记录一个警告，或者如果确定不再需要，则移除。
-        // 为确保现有代码（如果还有其他地方调用它）不会立即中断，暂时保留，但理想情况下应更新所有调用点。
-        Dialog.LOGGER.warn("Deprecated sendShowDialogToPlayer(ServerPlayer, String) called for dialogId: {}. This call lacks filtered dialog JSON.", dialogId);
-        // 行为：可以考虑发送一个空的dialogJson，让客户端处理（可能显示错误或请求数据），
-        // 或者干脆不发送，因为没有完整的、特定于玩家的数据。
-        // 为了安全，我们不发送可能导致客户端显示不正确内容的包。
-        // INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ShowDialogPacket(dialogId, "")); 
-    }
-    
     /**
      * 向指定玩家发送重新加载对话的网络包
      */

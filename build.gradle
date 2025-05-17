@@ -113,9 +113,6 @@ dependencies {
 
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
 }
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [minecraft_version   : minecraft_version, minecraft_version_range: minecraft_version_range,

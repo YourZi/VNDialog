@@ -224,23 +224,6 @@ public class DialogManager {
     }
 
     /**
-     * (客户端) 从缓存中清除指定ID的对话序列。
-     * @param dialogId 要清除的对话ID。
-     */
-    @OnlyIn(Dist.CLIENT)
-    public void clearDialogFromCache(String dialogId) {
-        if (Minecraft.getInstance() == null || !Minecraft.getInstance().level.isClientSide) return;
-        if (dialogId == null || dialogId.isEmpty()) {
-            Dialog.LOGGER.warn("Attempted to clear a dialog with null or empty ID from cache.");
-            return;
-        }
-        DialogSequence removed = dialogSequences.remove(dialogId);
-        if (removed != null) {
-            Dialog.LOGGER.debug("Dialog '{}' removed from client cache.", dialogId);
-        }
-    }
-
-    /**
      * (服务端) 获取所有对话序列的JSON表示，用于发送给客户端。
      */
     public Map<String, String> getAllDialogJsonsForSync() {
@@ -259,8 +242,6 @@ public class DialogManager {
     public DialogSequence getDialogSequence(String id) {
         DialogSequence original = dialogSequences.get(id);
         if (original != null) {
-            // Return a deep copy to prevent modification of the master cache
-            // and ensure player-specific filtering always starts from a pristine state.
             return GSON.fromJson(GSON.toJson(original), DialogSequence.class);
         }
         return null;
@@ -357,7 +338,7 @@ public class DialogManager {
     }
     
     /**
-     * 显示指定ID的对话序列。
+     * (客户端) 接收并缓存单个对话数据。
      */
     @OnlyIn(Dist.CLIENT)
     public void receiveDialogData(String dialogId, String dialogJson) {
@@ -367,7 +348,7 @@ public class DialogManager {
             if (sequence != null && sequence.getId() != null) {
                 dialogSequences.put(sequence.getId(), sequence);
                 // 确保在主线程显示对话界面
-                Minecraft.getInstance().execute(() -> showDialog(dialogId)); // Now show the dialog
+                Minecraft.getInstance().execute(() -> showDialog(dialogId));
             } else {
                 Dialog.LOGGER.warn("Failed to parse the dialog data received from the server or the ID is null: {}", dialogId);
                 sendPlayerMessage(Component.translatable("dialog.manager.received_sequence_empty", dialogId));
