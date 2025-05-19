@@ -37,7 +37,7 @@
   "dialog.test_dialog.speaker.leaf": "Little Leaf",
 
   "dialog.test_dialog.entry.start.text": "Welcome, @i, to this mod! This is a dialog system example.",
-  "dialog.test_dialog.entry.1.text": "This dialog system can display multiple characters simultaneously and show portraits in left, center, and right positions.",
+  "dialog.test_dialog.entry.1.text": "This dialog system can display multiple characters simultaneously and show portraits in left, center, and right positions. (In order to save space, the corresponding resource files for the portraits are not attached to the mod)",
   "dialog.test_dialog.entry.2.text": "You can configure dialog content via JSON files, including text, speaker, portraits and their positions, opacity, etc., allowing for simple, efficient, and comprehensive customization.",
   "dialog.test_dialog.entry.3.text.0": "Of course, things like ",
   "dialog.test_dialog.entry.3.text.1": "colored ",
