@@ -6,6 +6,7 @@ import com.google.gson.JsonSyntaxException;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -303,6 +304,40 @@ public class DialogManager {
                     Dialog.LOGGER.warn("Error executing visibility command '{}' for entry '{}' (dialog '{}') for player {}: {}. Entry hidden.",
                                        entryVisibilityCommand, entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage());
                     continue; // 出错则隐藏条目
+                }
+            }
+
+            //解析条目文本和说话者中的选择器
+            // commandSource 和 player 来自方法参数，在此作用域内可用
+            if (entry.getText() != null) { // 假设 entry.getText() 返回 JsonElement
+                try {
+                    Component textComponent = Component.Serializer.fromJson(entry.getText());
+                    if (textComponent != null) {
+                        Component resolvedTextComponent = ComponentUtils.updateForEntity(commandSource, textComponent, player, 0);
+                        entry.setText(Component.Serializer.toJsonTree(resolvedTextComponent));
+                    }
+                } catch (JsonSyntaxException e) {
+                    Dialog.LOGGER.warn("Failed to parse text component JSON for entry '{}' (dialog '{}') for player {}: {}. Skipping text update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage());
+                } catch (Exception e) {
+                    Dialog.LOGGER.error("Unexpected error processing text component for entry '{}' (dialog '{}') for player {}: {}. Skipping text update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage(), e);
+                }
+            }
+
+            if (entry.getSpeaker() != null) { // 假设 entry.getSpeaker() 返回 JsonElement
+                try {
+                    Component speakerComponent = Component.Serializer.fromJson(entry.getSpeaker());
+                    if (speakerComponent != null) {
+                        Component resolvedSpeakerComponent = ComponentUtils.updateForEntity(commandSource, speakerComponent, player, 0);
+                        entry.setSpeaker(Component.Serializer.toJsonTree(resolvedSpeakerComponent));
+                    }
+                } catch (JsonSyntaxException e) {
+                    Dialog.LOGGER.warn("Failed to parse speaker component JSON for entry '{}' (dialog '{}') for player {}: {}. Skipping speaker update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage());
+                } catch (Exception e) {
+                    Dialog.LOGGER.error("Unexpected error processing speaker component for entry '{}' (dialog '{}') for player {}: {}. Skipping speaker update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage(), e);
                 }
             }
 
