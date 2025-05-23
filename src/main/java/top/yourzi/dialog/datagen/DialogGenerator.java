@@ -37,6 +37,7 @@ public class DialogGenerator extends DialogProvider {
                                 .speaker(literalText("NPC"))
                                 .portraits(List.of(new PortraitInfo("leaf.png", PortraitPosition.LEFT, 1.0f, PortraitAnimationType.NONE)))
                                 .displayItems(List.of(new DisplayItemInfo(Items.ACACIA_FENCE.getDescriptionId(), 1, "")))
+                                .backgroundImage(new BackgroundImageInfo("example_background.png", BackgroundRenderOption.FILL))
                                 .build())
                 .addEntry(
                         DialogEntry.builder()

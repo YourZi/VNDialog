@@ -14,6 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import java.util.Map;
 import java.util.ArrayList;
+import top.yourzi.dialog.model.BackgroundImageInfo; // 添加导入
 
 /**
  * 表示单条对话的数据模型。
@@ -48,6 +49,10 @@ public class DialogEntry {
     // 需要在对话中显示的物品列表
     @SerializedName("display_items")
     private List<DisplayItemInfo> displayItems;
+
+    // 背景图片信息
+    @SerializedName("background_image")
+    private BackgroundImageInfo backgroundImage;
 
     public Component placeHolderReplace(String fromString, String toString, JsonElement targetElement) {
         if (targetElement == null || targetElement.isJsonNull()) {

@@ -26,6 +26,7 @@ import top.yourzi.dialog.util.STBBackendImage;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +49,8 @@ public class DialogScreen extends Screen {
     private final List<PortraitDisplayData> portraitDisplayList = new ArrayList<>();
     // 需要在对话中显示的物品列表
     private final List<ItemStack> displayItemStacks = new ArrayList<>();
+    // 背景图片相关
+    private BackgroundImageDisplayData backgroundImageDisplayData;
     // 对话框位置和大小
     private int dialogBoxX;
     private int dialogBoxY;
@@ -78,6 +81,11 @@ public class DialogScreen extends Screen {
         this.playerName = playerName;
         this.font = Minecraft.getInstance().font;
 
+        // 加载背景图片资源
+        if (dialogEntry.getBackgroundImage() != null && dialogEntry.getBackgroundImage().getPath() != null && !dialogEntry.getBackgroundImage().getPath().isEmpty()) {
+            this.backgroundImageDisplayData = new BackgroundImageDisplayData(dialogEntry.getBackgroundImage());
+        }
+
         // 加载多个立绘资源
         if (dialogEntry.getPortraits() != null && !dialogEntry.getPortraits().isEmpty()) {
             for (top.yourzi.dialog.model.PortraitInfo portraitInfo : dialogEntry.getPortraits()) {
@@ -86,7 +94,7 @@ public class DialogScreen extends Screen {
                             portraitInfo.getPath(),
                             portraitInfo.getBrightness(),
                             portraitInfo.getPosition(),
-                            portraitInfo.getAnimationType() // 传递动画类型
+                            portraitInfo.getAnimationType()
                     );
                     if (displayData.loadedSuccessfully) {
                         this.portraitDisplayList.add(displayData);
@@ -133,6 +141,48 @@ public class DialogScreen extends Screen {
         if (DialogManager.isFastForwardingNext()) {
             this.fastForwardCooldown = 5;
             DialogManager.setFastForwardingNext(false); // 重置标记
+        }
+    }
+
+    // 管理背景图片显示数据
+    private static class BackgroundImageDisplayData {
+        private final ResourceLocation imageLocation;
+        private final BackgroundRenderOption renderOption;
+        private STBBackendImage image;
+        private boolean loadedSuccessfully = false;
+        private int imageWidth;
+        private int imageHeight;
+
+        public BackgroundImageDisplayData(BackgroundImageInfo backgroundImageInfo) {
+            this.imageLocation = new ResourceLocation(Dialog.MODID, "textures/gui/backgrounds/" + backgroundImageInfo.getPath());
+            this.renderOption = backgroundImageInfo.getRenderOption();
+            loadResource();
+        }
+
+        private void loadResource() {
+            try {
+                Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(imageLocation);
+                if (resourceOptional.isPresent()) {
+                    try (InputStream inputStream = resourceOptional.get().open()) {
+                        this.image = STBBackendImage.read(inputStream);
+                        this.imageWidth = image.getWidth();
+                        this.imageHeight = image.getHeight();
+                        this.loadedSuccessfully = true;
+                    } catch (IOException e) {
+                        Dialog.LOGGER.error("Failed to load background image: {}", imageLocation, e);
+                    }
+                } else {
+                    Dialog.LOGGER.warn("Background image resource not found: {}", imageLocation);
+                }
+            } catch (Exception e) {
+                Dialog.LOGGER.error("Error accessing background image resource: {}", imageLocation, e);
+            }
+        }
+
+        public void close() {
+            if (image != null) {
+                image.close();
+            }
         }
     }
 
@@ -228,6 +278,11 @@ public class DialogScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+
+        // 首先渲染背景图片 (如果存在且加载成功)
+        if (this.backgroundImageDisplayData != null && this.backgroundImageDisplayData.loadedSuccessfully) {
+            renderBackgroundImage(guiGraphics, this.backgroundImageDisplayData);
+        }
 
         // 如果正在显示历史记录，则渲染历史记录界面
         if (showingHistory) {
@@ -916,5 +971,73 @@ public class DialogScreen extends Screen {
                 this.loadedSuccessfully = true;
             }
         }
+    }
+
+
+    private void renderBackgroundImage(GuiGraphics guiGraphics, BackgroundImageDisplayData bgData) {
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, bgData.imageLocation);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        int screenWidth = this.width;
+        int screenHeight = this.height;
+        int imgWidth = bgData.imageWidth;
+        int imgHeight = bgData.imageHeight;
+
+        BackgroundRenderOption renderOption = bgData.renderOption!= null? bgData.renderOption : BackgroundRenderOption.FILL;
+
+        switch (renderOption) {
+            case FILL:
+                float screenAspect = (float) screenWidth / screenHeight;
+                float imageAspect = (float) imgWidth / imgHeight;
+                int drawWidth, drawHeight, drawX, drawY;
+                if (imageAspect > screenAspect) {
+                    drawHeight = screenHeight;
+                    drawWidth = (int) (screenHeight * imageAspect);
+                    drawX = (screenWidth - drawWidth) / 2;
+                    drawY = 0;
+                } else {
+                    drawWidth = screenWidth;
+                    drawHeight = (int) (screenWidth / imageAspect);
+                    drawX = 0;
+                    drawY = (screenHeight - drawHeight) / 2;
+                }
+                guiGraphics.blit(bgData.imageLocation, drawX, drawY, drawWidth, drawHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+            case FIT:
+                screenAspect = (float) screenWidth / screenHeight;
+                imageAspect = (float) imgWidth / imgHeight;
+                if (imageAspect > screenAspect) {
+                    drawWidth = screenWidth;
+                    drawHeight = (int) (screenWidth / imageAspect);
+                } else {
+                    drawHeight = screenHeight;
+                    drawWidth = (int) (screenHeight * imageAspect);
+                }
+                drawX = (screenWidth - drawWidth) / 2;
+                drawY = (screenHeight - drawHeight) / 2;
+                guiGraphics.blit(bgData.imageLocation, drawX, drawY, drawWidth, drawHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+            case STRETCH:
+                guiGraphics.blit(bgData.imageLocation, 0, 0, screenWidth, screenHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+            case TILE:
+                for (int y = 0; y < screenHeight; y += imgHeight) {
+                    for (int x = 0; x < screenWidth; x += imgWidth) {
+                        int w = Math.min(imgWidth, screenWidth - x);
+                        int h = Math.min(imgHeight, screenHeight - y);
+                        guiGraphics.blit(bgData.imageLocation, x, y, 0, 0, w, h, imgWidth, imgHeight);
+                    }
+                }
+                break;
+            case CENTER:
+                drawX = (screenWidth - imgWidth) / 2;
+                drawY = (screenHeight - imgHeight) / 2;
+                guiGraphics.blit(bgData.imageLocation, drawX, drawY, imgWidth, imgHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+        }
+        RenderSystem.disableBlend();
     }
 }
