@@ -245,12 +245,36 @@ public class DialogScreen extends Screen {
             return;
         }
 
-        int buttonWidth = 200;
-        int buttonHeight = 20;
+        ResourceLocation buttonTextureLocation = new ResourceLocation(Dialog.MODID, "textures/buttons/button.png");
+        int buttonWidth = 200; // 默认值
+        int buttonHeight = 20; // 默认值
+        int textureActualWidth = 200; // 默认图集宽度
+        int textureActualHeight = 40; // 默认图集高度
+
+        try {
+            Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(buttonTextureLocation);
+            if (resourceOptional.isPresent()) {
+                try (InputStream inputStream = resourceOptional.get().open()) {
+                    STBBackendImage image = STBBackendImage.read(inputStream);
+                    textureActualWidth = image.getWidth() * 60 / textureActualHeight;
+                    textureActualHeight = 40;
+                    buttonWidth = textureActualWidth;
+                    buttonHeight = textureActualHeight / 2;
+                    image.close();
+                } catch (IOException e) {
+                    Dialog.LOGGER.error("Failed to load button texture to get dimensions: {}", buttonTextureLocation, e);
+                }
+            } else {
+                Dialog.LOGGER.warn("Button texture resource not found: {}", buttonTextureLocation);
+            }
+        } catch (Exception e) {
+            Dialog.LOGGER.error("Error accessing button texture resource: {}", buttonTextureLocation, e);
+        }
+
         int buttonSpacing = 5;
         int totalHeight = options.length * (buttonHeight + buttonSpacing) - buttonSpacing;
         int startY = dialogBoxY - totalHeight - 10;
-        ResourceLocation buttonTextureLocation = new ResourceLocation(Dialog.MODID, "textures/buttons/button.png");
+
 
         for (int i = 0; i < options.length; i++) {
             DialogOption option = options[i];
@@ -265,8 +289,8 @@ public class DialogScreen extends Screen {
                     0,               // yTexStart
                     buttonHeight,              // yDiffText
                     buttonTextureLocation,     // resourceLocation
-                    buttonWidth,              // textureWidth
-                    buttonHeight * 2,         // textureHeight
+                    textureActualWidth,        // textureWidth
+                    textureActualHeight,       // textureHeight
                     b -> {                     // onPress
                         // 执行选项指令（如果存在）
                         if (option.getCommand() != null && !option.getCommand().isEmpty()) {
