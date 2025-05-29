@@ -14,7 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import java.util.Map;
 import java.util.ArrayList;
-import top.yourzi.dialog.model.BackgroundImageInfo; // 添加导入
+import top.yourzi.dialog.model.BackgroundImageInfo;
 
 /**
  * 表示单条对话的数据模型。
@@ -40,7 +40,25 @@ public class DialogEntry {
     // 用户选择的选项文本
     private String selectedOptionText;
     // 该对话条目完成后执行的命令
-    private String command;
+    @SerializedName("command") // 保持JSON字段名为command
+    private List<String> commands;
+
+    // 为了兼容旧的单个命令的JSON格式，添加一个辅助的setter
+    public void setCommand(String command) {
+        if (this.commands == null) {
+            this.commands = new ArrayList<>();
+        }
+        this.commands.clear();
+        this.commands.add(command);
+    }
+
+    // 提供一个获取单个命令的getter（如果只有一个命令），或者可以根据需要调整
+    public String getCommand() {
+        if (commands != null && !commands.isEmpty()) {
+            return commands.get(0); // 返回第一个命令，或根据逻辑调整
+        }
+        return null;
+    }
 
     // 该对话条目的可见性命令
     @SerializedName("visibility_command")

@@ -15,8 +15,7 @@
       ],
       "portraits": [
         {"path": "tlipoca.png", "position": "RIGHT", "brightness": 1.0, "animationType": "FADE_IN"}
-      ],
-      "command": "say 1111"
+      ]
     },
     {
       "id": "1",
@@ -135,17 +134,17 @@
         {
           "text": {"translate": "dialog.test_dialog.option.weather_rain"},
           "target": "item",
-          "command": "weather rain"
+          "command": ["weather rain"]
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_clear"},
           "target": "item",
-          "command": "weather clear"
+          "command": ["weather clear"]
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_thunder"},
           "target": "item",
-          "command": "weather thunder"
+          "command": ["weather thunder"]
         }
       ]
     },

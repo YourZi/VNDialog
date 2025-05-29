@@ -49,7 +49,7 @@ public class DialogGenerator extends DialogProvider {
                                         DialogOption.builder()
                                                 .targetId("end")
                                                 .text(literalText("Clear"))
-                                                .command("weather clear")
+                                                .command(List.of("weather clear"))
                                                 .build(),
                                         DialogOption.builder()
                                                 .text(literalText("Rain"))

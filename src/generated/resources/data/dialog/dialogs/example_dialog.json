@@ -2,6 +2,10 @@
   "description": "This is an example dialog.",
   "entries": [
     {
+      "background_image": {
+        "path": "example_background.png",
+        "renderOption": "FILL"
+      },
       "display_items": [
         {
           "count": 1,
@@ -33,7 +37,9 @@
       "next": "3",
       "options": [
         {
-          "command": "weather clear",
+          "command": [
+            "weather clear"
+          ],
           "target": "end",
           "text": {
             "text": "Clear"

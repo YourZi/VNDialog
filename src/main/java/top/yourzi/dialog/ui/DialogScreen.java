@@ -154,7 +154,7 @@ public class DialogScreen extends Screen {
         private int imageHeight;
 
         public BackgroundImageDisplayData(BackgroundImageInfo backgroundImageInfo) {
-            this.imageLocation = new ResourceLocation(Dialog.MODID, "textures/gui/backgrounds/" + backgroundImageInfo.getPath());
+            this.imageLocation = new ResourceLocation(Dialog.MODID, "textures/backgrounds/" + backgroundImageInfo.getPath());
             this.renderOption = backgroundImageInfo.getRenderOption();
             loadResource();
         }
@@ -250,25 +250,32 @@ public class DialogScreen extends Screen {
         int buttonSpacing = 5;
         int totalHeight = options.length * (buttonHeight + buttonSpacing) - buttonSpacing;
         int startY = dialogBoxY - totalHeight - 10;
+        ResourceLocation buttonTextureLocation = new ResourceLocation(Dialog.MODID, "textures/buttons/button.png");
 
         for (int i = 0; i < options.length; i++) {
             DialogOption option = options[i];
             int buttonY = startY + i * (buttonHeight + buttonSpacing);
 
             OptionButton button = new OptionButton(
-                    (width - buttonWidth) / 2,
-                    buttonY,
-                    buttonWidth, buttonHeight,
-                    // 使用原始文本，因为选项文本是从对话数据中动态加载的
-                    option.getText(playerName),
-                    b -> {
+                    (width - buttonWidth) / 2, // xPos
+                    buttonY,                   // yPos
+                    buttonWidth,               // width
+                    buttonHeight,              // height
+                    0,               // xTexStart
+                    0,               // yTexStart
+                    buttonHeight,              // yDiffText
+                    buttonTextureLocation,     // resourceLocation
+                    buttonWidth,              // textureWidth
+                    buttonHeight * 2,         // textureHeight
+                    b -> {                     // onPress
                         // 执行选项指令（如果存在）
                         if (option.getCommand() != null && !option.getCommand().isEmpty()) {
-                            DialogManager.getInstance().executeCommand(this.getMinecraft().player, option.getCommand());
+                            DialogManager.getInstance().executeCommands(this.getMinecraft().player, option.getCommand());
                         }
                         DialogManager.getInstance().recordChoiceForCurrentDialog(option.getText(this.playerName).getString());
                         DialogManager.getInstance().jumpToDialog(option.getTargetId());
-                    }
+                    },
+                    option.getText(playerName) // message
             );
 
             optionButtons.add(button);
@@ -497,7 +504,7 @@ public class DialogScreen extends Screen {
                     DialogManager.getInstance().showNextDialog();
                     // 执行当前对话条目的指令
                     if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
-                        DialogManager.getInstance().executeCommand(this.getMinecraft().player, dialogEntry.getCommand());
+                        DialogManager.getInstance().executeCommands(this.getMinecraft().player, dialogEntry.getCommands());
                     }
                     return;
                 }
@@ -601,7 +608,7 @@ public class DialogScreen extends Screen {
                 updateAutoPlayButtonText();
             }
             if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
-                DialogManager.getInstance().executeCommand(this.getMinecraft().player, dialogEntry.getCommand());
+                DialogManager.getInstance().executeCommands(this.getMinecraft().player, dialogEntry.getCommands());
             }
             DialogManager.getInstance().showNextDialog();
             return true;
@@ -672,7 +679,7 @@ public class DialogScreen extends Screen {
                         // 如果没有选项，则推进对话
                         // 执行当前对话条目的指令（如果存在）
                         if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
-                            DialogManager.getInstance().executeCommand(this.getMinecraft().player, dialogEntry.getCommand());
+                            DialogManager.getInstance().executeCommands(this.getMinecraft().player, dialogEntry.getCommands());
                         }
                         DialogManager.getInstance().showNextDialog();
                         return true; // 消费点击事件

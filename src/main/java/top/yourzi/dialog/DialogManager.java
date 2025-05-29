@@ -579,9 +579,23 @@ public class DialogManager {
     /**
      * (服务端) 在服务器上代表玩家执行命令。
      */
+    public void executeCommands(Player player, List<String> commands) {
+        if (commands != null && !commands.isEmpty()) {
+            for (String command : commands) {
+                if (command != null && !command.isEmpty()) {
+                    NetworkHandler.sendExecuteCommandToServer(command);
+                }
+            }
+        }
+    }
+
+    // 保留旧的 executeCommand 方法以实现向后兼容，或者标记为 @Deprecated
+    @Deprecated
     public void executeCommand(Player player, String command) {
         if (command != null && !command.isEmpty()) {
-            NetworkHandler.sendExecuteCommandToServer(command);
+            List<String> singleCommandList = new ArrayList<>();
+            singleCommandList.add(command);
+            executeCommands(player, singleCommandList);
         }
     }
 }

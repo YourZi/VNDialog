@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -64,7 +65,7 @@ public class DialogOption {
     // 选择该选项后执行的命令
     @Getter
     @Setter
-    private String command;
+    private List<String> command;
 
     // 控制该选项是否可见的指令
     @Getter
