@@ -15,6 +15,7 @@
   "dialog.ui.exit": "Exit",
   "dialog.ui.auto_play": "Auto Play",
   "dialog.ui.history": "History",
+  "dialog.ui.close_history": "Close History",
   "dialog.ui.esc": "Exit Dialog",
   "dialog.ui.confirm_esc": "Are you sure you want to exit the current dialog?",
   

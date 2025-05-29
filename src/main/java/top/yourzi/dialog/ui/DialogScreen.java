@@ -228,9 +228,9 @@ public class DialogScreen extends Screen {
         this.optionButtonsCreated = false; // 初始化选项按钮创建标记
 
         // 初始化关闭历史记录按钮 (用于关闭历史查看界面)
-        this.closeHistoryButton = Button.builder(Component.literal("▼"), (button) -> {
+        this.closeHistoryButton = Button.builder(Component.literal("-▼-"), (button) -> {
             toggleHistoryScreen();
-        }).bounds(this.width / 2 - 50, this.height - 30, 100, 20).build();
+        }).bounds(this.width / 2 - 50, this.height - 30, 60, 20).build();
 
     }
 
@@ -771,6 +771,12 @@ public class DialogScreen extends Screen {
      * 渲染对话历史记录界面
      */
     private void renderHistoryScreen(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+
+        //悬浮文本提示
+        if (this.closeHistoryButton.isMouseOver(mouseX, mouseY)) {
+            guiGraphics.renderTooltip(this.font, Component.translatable("dialog.ui.close_history"), mouseX, mouseY);
+        }
+        
         // 渲染背景
         guiGraphics.fill(0, 0, this.width, this.height, 0xCC000000); // 半透明黑色背景
 
@@ -958,6 +964,11 @@ public class DialogScreen extends Screen {
         PortraitAnimationType animationType = PortraitAnimationType.NONE;
         long animationStartTime = -1;
         boolean loadedSuccessfully = false;
+
+        public static void clearCache() {
+            CACHED.clear();
+            Dialog.LOGGER.info("Portrait cache cleared.");
+        }
 
         PortraitDisplayData(String path, float brightness, PortraitPosition position, PortraitAnimationType animationType) {
             if (path != null && !path.isEmpty()) {

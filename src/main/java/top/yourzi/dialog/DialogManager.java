@@ -589,7 +589,7 @@ public class DialogManager {
         }
     }
 
-    // 保留旧的 executeCommand 方法以实现向后兼容，或者标记为 @Deprecated
+    // 保留旧的 executeCommand 方法以实现向后兼容
     @Deprecated
     public void executeCommand(Player player, String command) {
         if (command != null && !command.isEmpty()) {

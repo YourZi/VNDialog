@@ -15,6 +15,7 @@
   "dialog.ui.exit": "退出",
   "dialog.ui.auto_play": "自动播放",
   "dialog.ui.history": "历史记录",
+  "dialog.ui.close_history": "关闭历史记录",
   "dialog.ui.esc": "关闭对话",
   "dialog.ui.confirm_esc": "您确定要退出当前对话吗？",
     "vndialog.ui.submit_item": "提交物品",
