@@ -91,14 +91,12 @@
   "speaker": "Speaker Name",
   "text": "Dialog text.",
   "next": "entry_id_to_go_to_after_this_entry",
+  "commands": "give @s minecraft:apple",
   "portraits": [
     // ... 立绘信息列表 ...
   ],
   "options": [
     // ... 对话选项列表 ...
-  ],
-  "commands": [
-    // ... 当此条目显示时执行的指令列表 ...
   ],
   "display_items": [
     //... 展示的物品列表...
@@ -117,12 +115,12 @@
   - 对话的主要内容。可以是普通字符串或文本组件。
 - **`next` (可选)**: `String`
   - 当玩家完成此条目的对话后，对话将跳转到的下一个条目的 `id`。
+- **`command` (可选)**:
+  - 一个字符串，一个Minecraft指令（不需要前导 `/`）。这些指令会在该对话条目播放完成时，以发起对话的玩家的身份（忽略原本权限，强制以OP权限）执行。
 - **`portraits` (可选)**: 
   - 定义此条目中显示的立绘。
 - **`options` (可选)**:
   - 提供给玩家的选择。如果存在选项，对话将暂停等待玩家选择。
-- **`commands` (可选)**:
-  - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该对话条目结束时，以发起对话的玩家的身份（忽略原本权限，强制以OP权限）执行。
 - **`display_items` (可选)**:
   - 在对话中展示的物品列表。
 - **`background_image` (可选)**:
@@ -167,9 +165,7 @@
 {
   "text": "Choose this option!",
   "target": "entry_id_after_choosing_this",
-  "commands": [
-    // ... 当此选项被选择时执行的指令列表 ...
-  ],
+  "command": "give @s minecraft:apple",
   "visibility_command": "execute if entity @s[tag=test_tag]"
 }
 ```
@@ -178,8 +174,8 @@
   - 选项按钮上显示的文本。可以是普通字符串或文本组件。
 - **`target` (必需)**: `String`
   - 当玩家选择此选项后，对话将跳转到的条目的 `id`。
-- **`commands` (可选)**: `String`
-  - 一个字符串数组，其中每个字符串都是一个Minecraft指令（不需要前导 `/`）。这些指令会在该选项被选择后、跳转到 `target` 之前执行。
+- **`command` (可选)**: `String`
+  - 一个字符串, 为Minecraft指令（不需要前导 `/`）。这个指令会在该选项被选择后、跳转到 `target` 之前以发起对话的玩家的身份（忽略原本权限，强制以OP权限）执行。
 - **`visibility_command` (可选)**: `String`
   - 一个Minecraft指令字符串（不需要前导 `/`）。该指令会在尝试展示此选项前，以发起对话的玩家的身份（忽略原本权限，强制以OP权限）执行。如果指令执行成功并返回值为 `1` (代表true)，则此选项对该玩家可见。如果指令不存在、执行失败或返回值不为 `1`，则此选项对该玩家不可见。
 
@@ -195,8 +191,8 @@
 ```
 
 - **`path` (必需)**: `String`
-  - 背景图片的路径。路径相对于 `assets/dialog/textures/gui/dialog_backgrounds/`。
-  - 例如，`"example_background.png"` 会加载 `assets/dialog/textures/gui/dialog_backgrounds/example_background.png`。
+  - 背景图片的路径。路径相对于 `assets/dialog/textures/dialog_backgrounds/`。
+  - 例如，`"example_background.png"` 会加载 `assets/dialog/textures/dialog_backgrounds/example_background.png`。
 - **`render_option` (可选, 默认为 `FILL`)**: `String`
   - 背景图片的渲染方式。可选值：
     - `"FILL"`: 图片等比缩放，溢出部分不会显示，优先满足长边，使图片填满整个屏幕。

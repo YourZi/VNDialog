@@ -15,7 +15,8 @@
       ],
       "portraits": [
         {"path": "tlipoca.png", "position": "RIGHT", "brightness": 1.0, "animationType": "FADE_IN"}
-      ]
+      ],
+      "command": "say 1111"
     },
     {
       "id": "1",
