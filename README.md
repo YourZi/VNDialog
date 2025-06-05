@@ -35,11 +35,19 @@
    ▶  建议使用.png格式，尺寸不限，建议宽高比为16:5
    
    **选项按钮图片**  
-   在`{版本文件夹}/resourcepacks/{自己的资源包}/assets/dialog/textures/buttons`路径下放置选项按钮图片文件  
+   1.20.1 forge版本：
+   在`{版本文件夹}/resourcepacks/{自己的资源包}/assets/dialog/textures/buttons`路径下放置选项按钮图片文件
 
-   ▶  按钮图片应为纹理图集，正常状态和悬停状态垂直排列
-   
+   ▶  按钮图片应为纹理图集，正常状态和悬停状态垂直排列，参考源码内示例
+
    ▶  建议使用.png格式，尺寸不限，建议宽高比为5:1（单个按钮10:1）
+
+   1.21.1 neoforge版本：
+   在`{版本文件夹}/resourcepacks/{自己的资源包}/assets/dialog/textures/gui/sprites/widget`路径下放置选项按钮图片文件
+
+   ▶  按钮图片为独立文件，正常状态和悬停状态各自为单独图片文件，具体参考源码内路径配置
+   
+   ▶  建议使用.png格式，尺寸不限
 
 
 ### 💬对话制作
