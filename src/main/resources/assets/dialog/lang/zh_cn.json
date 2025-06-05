@@ -15,6 +15,7 @@
   "dialog.ui.exit": "退出",
   "dialog.ui.auto_play": "自动播放",
   "dialog.ui.history": "历史记录",
+  "dialog.ui.close_history": "关闭历史记录",
   "dialog.ui.esc": "关闭对话",
   "dialog.ui.confirm_esc": "您确定要退出当前对话吗？",
     "vndialog.ui.submit_item": "提交物品",
@@ -37,8 +38,8 @@
   "dialog.test_dialog.speaker.tlipoca": "特莉波卡",
   "dialog.test_dialog.speaker.leaf": "小叶子",
 
-  "dialog.test_dialog.entry.start.text": "@i，欢迎使用本模组,这是一个对话系统示例。",
-  "dialog.test_dialog.entry.1.text": "这个对话系统可以同时显示多个角色，并在左中右三个位置显示立绘。",
+  "dialog.test_dialog.entry.start.text": "@i, 欢迎使用本模组，这是一个对话系统示例",
+  "dialog.test_dialog.entry.1.text": "这个对话系统可以同时显示多个角色，并在左中右三个位置显示立绘。（为了节省空间，相应的立绘资源文件未附加在模组内）",
   "dialog.test_dialog.entry.2.text": "你可以通过JSON文件配置对话内容，包括文本、说话者、立绘及其位置、透明度等，可以简单且高效全面地自定义对话。",
   "dialog.test_dialog.entry.3.text.0": "当然，像是",
   "dialog.test_dialog.entry.3.text.1": "彩",
@@ -60,6 +61,7 @@
   "dialog.test_dialog.entry.item.text": "可以在对话框上方自定义渲染的物品，包括NBT和数量。",
   "dialog.test_dialog.entry.end.text": "感谢使用本模组！使用/dialog show test_dialog命令可以再次打开这个对话。",
   "dialog.test_dialog.entry.hidden_entry.text": "这是一个隐藏条件对话，只有生存模式下的玩家可见",
+  "dialog.test_dialog.entry.background_cg.text":"也可以在对话背景中添加自定义的图片用作CG",
 
   "dialog.test_dialog.option.more_info": "了解更多关于对话系统的信息",
   "dialog.test_dialog.option.end_dialog": "结束对话",

@@ -18,7 +18,8 @@ public class Config {
     public static final ModConfigSpec.ConfigValue<Integer> DIALOG_TEXT_COLOR; // 对话文本默认颜色
     public static final ModConfigSpec.ConfigValue<Integer> DIALOG_BACKGROUND_COLOR; // 对话框背景颜色
     public static final ModConfigSpec.ConfigValue<Integer> DIALOG_BACKGROUND_OPACITY; // 对话框背景不透明度
-    
+    public static final ModConfigSpec.ConfigValue<Boolean> USE_CUSTOM_BUTTON_TEXTURE; // 是否使用自定义按钮纹理
+
     // 立绘配置
     public static final ModConfigSpec.ConfigValue<Boolean> ENABLE_PORTRAIT_ANIMATIONS; // 启用立绘动画
     
@@ -71,6 +72,9 @@ public class Config {
         TEXT_ANIMATION_SPEED = BUILDER
                 .comment("文本逐字显示的速度（每秒字符数，设置为0则立即显示全部文本）")
                 .defineInRange("textAnimationSpeed", 20, 0, 1000);
+        USE_CUSTOM_BUTTON_TEXTURE = BUILDER
+                .comment("是否使用自定义按钮纹理（否则使用Minecraft原版按钮纹理）")
+                .define("useCustomButtonTexture", false);
         BUILDER.pop();
     }
     

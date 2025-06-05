@@ -15,6 +15,7 @@
   "dialog.ui.exit": "Exit",
   "dialog.ui.auto_play": "Auto Play",
   "dialog.ui.history": "History",
+  "dialog.ui.close_history": "Close History",
   "dialog.ui.esc": "Exit Dialog",
   "dialog.ui.confirm_esc": "Are you sure you want to exit the current dialog?",
   
@@ -37,7 +38,7 @@
   "dialog.test_dialog.speaker.leaf": "Little Leaf",
 
   "dialog.test_dialog.entry.start.text": "Welcome, @i, to this mod! This is a dialog system example.",
-  "dialog.test_dialog.entry.1.text": "This dialog system can display multiple characters simultaneously and show portraits in left, center, and right positions.",
+  "dialog.test_dialog.entry.1.text": "This dialog system can display multiple characters simultaneously and show portraits in left, center, and right positions. (In order to save space, the corresponding resource files for the portraits are not attached to the mod)",
   "dialog.test_dialog.entry.2.text": "You can configure dialog content via JSON files, including text, speaker, portraits and their positions, opacity, etc., allowing for simple, efficient, and comprehensive customization.",
   "dialog.test_dialog.entry.3.text.0": "Of course, things like ",
   "dialog.test_dialog.entry.3.text.1": "colored ",
@@ -59,6 +60,7 @@
   "dialog.test_dialog.entry.item.text": "Rendered items can be customized at the top of the dialog, including NBT and quantity.",
   "dialog.test_dialog.entry.end.text": "Thank you for using this mod! Use the /dialog show test_dialog command to open this dialog again.",
   "dialog.test_dialog.entry.hidden_entry.text": "This entry is hidden from players in survival mode",
+  "dialog.test_dialog.entry.background_cg.text":"You can also add custom images as CG to the background",
 
   "dialog.test_dialog.option.more_info": "Learn more about the dialog system",
   "dialog.test_dialog.option.end_dialog": "End dialog",

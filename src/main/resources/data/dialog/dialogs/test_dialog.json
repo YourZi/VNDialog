@@ -133,17 +133,17 @@
       "options": [
         {
           "text": {"translate": "dialog.test_dialog.option.weather_rain"},
-          "target": "item",
+          "target": "background_cg",
           "command": ["weather rain"]
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_clear"},
-          "target": "item",
+          "target": "background_cg",
           "command": ["weather clear"]
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_thunder"},
-          "target": "item",
+          "target": "background_cg",
           "command": ["weather thunder"]
         }
       ]

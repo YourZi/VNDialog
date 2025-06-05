@@ -18,6 +18,10 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+// 设置编码为UTF-8
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version

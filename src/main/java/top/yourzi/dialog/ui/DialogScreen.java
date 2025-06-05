@@ -15,8 +15,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.client.event.ContainerScreenEvent.Render;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import top.yourzi.dialog.Config;
 import top.yourzi.dialog.Dialog;
 import top.yourzi.dialog.DialogManager;
@@ -234,11 +232,64 @@ public class DialogScreen extends Screen {
             private boolean loadedSuccessfully = false;
             private int imageWidth;
             private int imageHeight;
+            // 添加动画相关字段
+            private boolean fadeInStarted = false;
+            private boolean fadeOutStarted = false;
+            private long fadeInStartTime = -1;
+            private long fadeOutStartTime = -1;
+            public static final int FADE_DURATION_MS = 500; // 淡入淡出持续时间，0.5秒
     
             public BackgroundImageDisplayData(BackgroundImageInfo backgroundImageInfo) {
                 this.imageLocation = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, "textures/backgrounds/" + backgroundImageInfo.getPath());
                 this.renderOption = backgroundImageInfo.getRenderOption();
                 loadResource();
+                // 初始化时启动淡入动画
+                if (loadedSuccessfully) {
+                    startFadeIn();
+                }
+            }
+            
+            // 开始淡入动画
+            public void startFadeIn() {
+                this.fadeInStarted = true;
+                this.fadeOutStarted = false;
+                this.fadeInStartTime = System.currentTimeMillis();
+            }
+            
+            // 开始淡出动画
+            public void startFadeOut() {
+                this.fadeOutStarted = true;
+                this.fadeInStarted = false;
+                this.fadeOutStartTime = System.currentTimeMillis();
+            }
+            
+            // 获取当前透明度
+            public float getCurrentAlpha() {
+                long currentTime = System.currentTimeMillis();
+                float alpha = 1.0f;
+                
+                if (fadeInStarted && fadeInStartTime != -1) {
+                    long elapsedTime = currentTime - fadeInStartTime;
+                    if (elapsedTime < FADE_DURATION_MS) {
+                        // 淡入过程中，透明度从0逐渐增加到1
+                        alpha = (float) elapsedTime / FADE_DURATION_MS;
+                    } else {
+                        // 淡入完成
+                        fadeInStarted = false;
+                    }
+                } else if (fadeOutStarted && fadeOutStartTime != -1) {
+                    long elapsedTime = currentTime - fadeOutStartTime;
+                    if (elapsedTime < FADE_DURATION_MS) {
+                        // 淡出过程中，透明度从1逐渐减少到0
+                        alpha = 1.0f - (float) elapsedTime / FADE_DURATION_MS;
+                    } else {
+                        // 淡出完成
+                        fadeOutStarted = false;
+                        alpha = 0.0f;
+                    }
+                }
+                
+                return alpha;
             }
     
             private void loadResource() {
@@ -327,36 +378,39 @@ public class DialogScreen extends Screen {
             return;
         }
         
-        int buttonWidth = 200; // 默认值
-        int buttonHeight = 20; // 默认值
-        int textureActualWidth = 200; // 默认图集宽度
-        int textureActualHeight = 40; // 默认图集高度
-        ResourceLocation buttonTextureLocation = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, "textures/buttons/button.png");
-        WidgetSprites sprites = new WidgetSprites(
-            buttonTextureLocation,
-            buttonTextureLocation,
-            buttonTextureLocation,
-            buttonTextureLocation);
-        
-            try {
-                Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(buttonTextureLocation);
-                if (resourceOptional.isPresent()) {
-                    try (InputStream inputStream = resourceOptional.get().open()) {
-                        STBBackendImage image = STBBackendImage.read(inputStream);
-                        textureActualWidth = image.getWidth() * 60 / textureActualHeight;
-                        textureActualHeight = 40;
-                        buttonWidth = textureActualWidth;
-                        buttonHeight = textureActualHeight / 2;
-                        image.close();
-                    } catch (IOException e) {
-                        Dialog.LOGGER.error("Failed to load button texture to get dimensions: {}", buttonTextureLocation, e);
-                    }
-                } else {
-                    Dialog.LOGGER.warn("Button texture resource not found: {}", buttonTextureLocation);
-                }
-            } catch (Exception e) {
-                Dialog.LOGGER.error("Error accessing button texture resource: {}", buttonTextureLocation, e);
-            }
+        int buttonWidth = 200;
+        int buttonHeight = 20;
+        WidgetSprites sprites;
+
+        if (Config.USE_CUSTOM_BUTTON_TEXTURE.get()) {
+        // 使用自定义纹理
+        ResourceLocation buttonTexture = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, "widget/button");
+        ResourceLocation buttonHighlightTexture = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, "widget/button_highlighted");
+        ResourceLocation buttonDisabledTexture = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, "widget/button_disabled");
+
+        sprites = new WidgetSprites(
+            buttonTexture,           // enabled
+            buttonDisabledTexture,   // disabled  
+            buttonHighlightTexture,  // highlighted
+            buttonHighlightTexture   // focused
+            );
+
+        }else{
+
+        // 使用 Minecraft 默认的按钮纹理
+        ResourceLocation buttonTexture = ResourceLocation.withDefaultNamespace("widget/button");
+        ResourceLocation buttonHighlightTexture = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
+        ResourceLocation buttonDisabledTexture = ResourceLocation.withDefaultNamespace("widget/button_disabled");
+
+        sprites = new WidgetSprites(
+            buttonTexture,           // enabled
+            buttonDisabledTexture,   // disabled  
+            buttonHighlightTexture,  // highlighted
+            buttonHighlightTexture   // focused
+            );
+        }
+
+
 
             int buttonSpacing = 5;
             int totalHeight = options.length * (buttonHeight + buttonSpacing) - buttonSpacing;
@@ -746,13 +800,48 @@ public class DialogScreen extends Screen {
     //处理关闭对话确认的回调方法
     private void confirmCloseDialog(boolean confirmed) {
         if (confirmed) {
-            this.onClose(); // 调用Screen的onClose方法，通常是关闭屏幕
+            closeScreenWithFadeOut(); // 使用淡出效果关闭屏幕
         } else {
-            // 如果用户选择“否”，则重新显示当前对话界面
+            // 如果用户选择"否"，则重新显示当前对话界面
             if (this.minecraft != null) {
                 this.minecraft.setScreen(this);
             }
         }
+    }
+    
+    // 使用淡出效果关闭屏幕
+    private void closeScreenWithFadeOut() {
+        // 在关闭对话框前启动背景图片淡出动画
+        if (this.backgroundImageDisplayData != null && this.backgroundImageDisplayData.loadedSuccessfully) {
+            this.backgroundImageDisplayData.startFadeOut();
+            // 延迟关闭对话框，等待淡出动画完成
+            new Thread(() -> {
+                try {
+                    Thread.sleep(BackgroundImageDisplayData.FADE_DURATION_MS);
+                    Minecraft.getInstance().execute(() -> {
+                        DialogManager.getInstance().stopAutoPlay();
+                        super.onClose();
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    // 如果线程被中断，直接关闭对话框
+                    Minecraft.getInstance().execute(() -> {
+                        DialogManager.getInstance().stopAutoPlay();
+                        super.onClose();
+                    });
+                }
+            }).start();
+        } else {
+            // 如果没有背景图片，直接关闭对话框
+            DialogManager.getInstance().stopAutoPlay();
+            super.onClose();
+        }
+    }
+    
+    @Override
+    public void onClose() {
+        // 使用淡出效果关闭屏幕，而不是直接调用 super.onClose()
+        closeScreenWithFadeOut();
     }
 
     @Override
@@ -1036,7 +1125,10 @@ public class DialogScreen extends Screen {
     private void renderBackgroundImage(GuiGraphics guiGraphics, BackgroundImageDisplayData bgData) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, bgData.imageLocation);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        
+        // 获取当前透明度
+        float alpha = bgData.getCurrentAlpha();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
