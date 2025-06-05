@@ -38,6 +38,7 @@ import java.util.Optional;
 @SuppressWarnings("removal")
 public class DialogScreen extends Screen {
     private static final int ANIMATION_DURATION_MS = 300; // 动画持续时间，单位毫秒
+    private static final int BACKGROUND_FADE_DURATION_MS = 500; // 背景图片淡入淡出持续时间，单位毫秒
     // 对话序列和当前对话条目
     private final DialogSequence dialogSequence;
     private final DialogEntry dialogEntry;
@@ -51,6 +52,9 @@ public class DialogScreen extends Screen {
     private final List<ItemStack> displayItemStacks = new ArrayList<>();
     // 背景图片相关
     private BackgroundImageDisplayData backgroundImageDisplayData;
+    private long backgroundFadeStartTime = 0; // 背景图片淡入开始时间
+    private long backgroundFadeOutStartTime = 0; // 背景图片淡出开始时间
+    private boolean isClosing = false; // 是否正在关闭
     // 对话框位置和大小
     private int dialogBoxX;
     private int dialogBoxY;
@@ -84,6 +88,7 @@ public class DialogScreen extends Screen {
         // 加载背景图片资源
         if (dialogEntry.getBackgroundImage() != null && dialogEntry.getBackgroundImage().getPath() != null && !dialogEntry.getBackgroundImage().getPath().isEmpty()) {
             this.backgroundImageDisplayData = new BackgroundImageDisplayData(dialogEntry.getBackgroundImage());
+            this.backgroundFadeStartTime = System.currentTimeMillis(); // 初始化背景淡入开始时间
         }
 
         // 加载多个立绘资源
@@ -245,30 +250,42 @@ public class DialogScreen extends Screen {
             return;
         }
 
-        ResourceLocation buttonTextureLocation = new ResourceLocation(Dialog.MODID, "textures/buttons/button.png");
+        ResourceLocation buttonTextureLocation;
         int buttonWidth = 200; // 默认值
         int buttonHeight = 20; // 默认值
         int textureActualWidth = 200; // 默认图集宽度
         int textureActualHeight = 40; // 默认图集高度
 
-        try {
-            Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(buttonTextureLocation);
-            if (resourceOptional.isPresent()) {
-                try (InputStream inputStream = resourceOptional.get().open()) {
-                    STBBackendImage image = STBBackendImage.read(inputStream);
-                    textureActualWidth = image.getWidth() * 60 / textureActualHeight;
-                    textureActualHeight = 40;
-                    buttonWidth = textureActualWidth;
-                    buttonHeight = textureActualHeight / 2;
-                    image.close();
-                } catch (IOException e) {
-                    Dialog.LOGGER.error("Failed to load button texture to get dimensions: {}", buttonTextureLocation, e);
+        // 根据配置决定使用自定义纹理还是原版纹理
+        if (Config.USE_CUSTOM_BUTTON_TEXTURE.get()) {
+            // 使用自定义纹理
+            buttonTextureLocation = new ResourceLocation(Dialog.MODID, "textures/buttons/button.png");
+            try {
+                Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(buttonTextureLocation);
+                if (resourceOptional.isPresent()) {
+                    try (InputStream inputStream = resourceOptional.get().open()) {
+                        STBBackendImage image = STBBackendImage.read(inputStream);
+                        textureActualWidth = image.getWidth() * 60 / 40;
+                        textureActualHeight = 40;
+                        buttonWidth = textureActualWidth;
+                        buttonHeight = 20;
+                        image.close();
+                    } catch (IOException e) {
+                        Dialog.LOGGER.error("Failed to load custom button texture to get dimensions: {}", buttonTextureLocation, e);
+                    }
+                } else {
+                    Dialog.LOGGER.warn("Custom button texture resource not found: {}", buttonTextureLocation);
                 }
-            } else {
-                Dialog.LOGGER.warn("Button texture resource not found: {}", buttonTextureLocation);
+            } catch (Exception e) {
+                Dialog.LOGGER.error("Error accessing custom button texture resource: {}", buttonTextureLocation, e);
             }
-        } catch (Exception e) {
-            Dialog.LOGGER.error("Error accessing button texture resource: {}", buttonTextureLocation, e);
+        } else {
+            // 使用Minecraft原版按钮纹理
+            buttonTextureLocation = new ResourceLocation("minecraft", "textures/gui/widgets.png");
+            buttonWidth = 200;
+            buttonHeight = 20;
+            textureActualWidth = 256;
+            textureActualHeight = 256;
         }
 
         int buttonSpacing = 5;
@@ -280,14 +297,26 @@ public class DialogScreen extends Screen {
             DialogOption option = options[i];
             int buttonY = startY + i * (buttonHeight + buttonSpacing);
 
+            // 根据是否使用原版纹理设置不同的纹理起始位置和差值
+            int xTexStart = 0;
+            int yTexStart = 0;
+            int yDiffText = buttonHeight;
+            
+            if (!Config.USE_CUSTOM_BUTTON_TEXTURE.get()) {
+                // 原版按钮纹理的起始位置和差值
+                xTexStart = 0;
+                yTexStart = 66;
+                yDiffText = 20; // 原版按钮的高度差值
+            }
+            
             OptionButton button = new OptionButton(
                     (width - buttonWidth) / 2, // xPos
                     buttonY,                   // yPos
                     buttonWidth,               // width
                     buttonHeight,              // height
-                    0,               // xTexStart
-                    0,               // yTexStart
-                    buttonHeight,              // yDiffText
+                    xTexStart,                 // xTexStart
+                    yTexStart,                 // yTexStart
+                    yDiffText,                 // yDiffText
                     buttonTextureLocation,     // resourceLocation
                     textureActualWidth,        // textureWidth
                     textureActualHeight,       // textureHeight
@@ -668,7 +697,23 @@ public class DialogScreen extends Screen {
 
     @Override
     public void onClose() {
-        super.onClose(); // 调用父类的onClose，确保屏幕正常关闭
+        if (backgroundImageDisplayData != null && !isClosing) {
+            // 开始淡出动画
+            isClosing = true;
+            backgroundFadeOutStartTime = System.currentTimeMillis();
+            // 延迟关闭，等待淡出动画完成
+            new Thread(() -> {
+                try {
+                    Thread.sleep(BACKGROUND_FADE_DURATION_MS);
+                    minecraft.execute(() -> super.onClose());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    minecraft.execute(() -> super.onClose());
+                }
+            }).start();
+        } else {
+            super.onClose(); // 调用父类的onClose，确保屏幕正常关闭
+        }
     }
 
     @Override
@@ -1019,7 +1064,26 @@ public class DialogScreen extends Screen {
     private void renderBackgroundImage(GuiGraphics guiGraphics, BackgroundImageDisplayData bgData) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, bgData.imageLocation);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        
+        // 计算淡入淡出效果的透明度
+        float alpha = 1.0F;
+        if (isClosing && backgroundFadeOutStartTime > 0) {
+            // 淡出阶段：从1到0
+            long elapsedTime = System.currentTimeMillis() - backgroundFadeOutStartTime;
+            if (elapsedTime < BACKGROUND_FADE_DURATION_MS) {
+                alpha = Math.max(0.0F, 1.0F - (float) elapsedTime / BACKGROUND_FADE_DURATION_MS);
+            } else {
+                alpha = 0.0F;
+            }
+        } else if (backgroundFadeStartTime > 0) {
+            // 淡入阶段：从0到1
+            long elapsedTime = System.currentTimeMillis() - backgroundFadeStartTime;
+            if (elapsedTime < BACKGROUND_FADE_DURATION_MS) {
+                alpha = Math.min(1.0F, (float) elapsedTime / BACKGROUND_FADE_DURATION_MS);
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 

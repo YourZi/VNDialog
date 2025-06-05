@@ -19,6 +19,7 @@ public class Config {
     public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_TEXT_COLOR; // 对话文本默认颜色
     public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_BACKGROUND_COLOR; // 对话框背景颜色
     public static final ForgeConfigSpec.ConfigValue<Integer> DIALOG_BACKGROUND_OPACITY; // 对话框背景不透明度
+    public static final ForgeConfigSpec.ConfigValue<Boolean> USE_CUSTOM_BUTTON_TEXTURE; // 是否使用自定义按钮纹理
     
     // 立绘配置
     public static final ForgeConfigSpec.ConfigValue<Boolean> ENABLE_PORTRAIT_ANIMATIONS; // 启用立绘动画
@@ -51,6 +52,9 @@ public class Config {
         DIALOG_BACKGROUND_OPACITY = BUILDER
                 .comment("对话框背景不透明度 (0-255)")
                 .define("dialogBackgroundOpacity", 200);
+        USE_CUSTOM_BUTTON_TEXTURE = BUILDER
+                .comment("是否使用自定义按钮纹理（否则使用Minecraft原版按钮纹理）")
+                .define("useCustomButtonTexture", false);
         BUILDER.pop();
 
         BUILDER.comment("立绘配置").push("portrait");
