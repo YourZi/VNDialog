@@ -168,6 +168,17 @@
       ]
     },
     {
+      "id": "background_cg",
+      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+      "text": {"translate": "dialog.test_dialog.entry.background_cg.text"},
+      "portraits": [
+        {"path": "tlipoca.png"}
+      ],
+      "background_image": {
+        "path": "background.png"
+      }
+    },
+    {
       "id": "hidden_entry",
       "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
       "visibility_command": "execute if entity @s[gamemode=survival]",
