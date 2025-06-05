@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -312,7 +313,41 @@ public class DialogManager {
                     continue; // 其他执行错误则隐藏条目
                 }
             }
+/*
+            //解析条目文本和说话者中的选择器
+            // commandSource 和 player 来自方法参数，在此作用域内可用
+            if (entry.getText() != null) { // 假设 entry.getText() 返回 JsonElement
+                try {
+                    Component textComponent = Component.Serializer.fromJson(entry.getText(), null);
+                    if (textComponent != null) {
+                        Component resolvedTextComponent = ComponentUtils.updateForEntity(commandSource, textComponent, player, 0);
+                        entry.setText(Component.Serializer.toJsonTree(resolvedTextComponent));
+                    }
+                } catch (JsonSyntaxException e) {
+                    Dialog.LOGGER.warn("Failed to parse text component JSON for entry '{}' (dialog '{}') for player {}: {}. Skipping text update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage());
+                } catch (Exception e) {
+                    Dialog.LOGGER.error("Unexpected error processing text component for entry '{}' (dialog '{}') for player {}: {}. Skipping text update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage(), e);
+                }
+            }
 
+            if (entry.getSpeaker() != null) { // 假设 entry.getSpeaker() 返回 JsonElement
+                try {
+                    Component speakerComponent = Component.Serializer.fromJson(entry.getSpeaker(), null);
+                    if (speakerComponent != null) {
+                        Component resolvedSpeakerComponent = ComponentUtils.updateForEntity(commandSource, speakerComponent, player, 0);
+                        entry.setSpeaker(Component.Serializer.toJsonTree(resolvedSpeakerComponent));
+                    }
+                } catch (JsonSyntaxException e) {
+                    Dialog.LOGGER.warn("Failed to parse speaker component JSON for entry '{}' (dialog '{}') for player {}: {}. Skipping speaker update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage());
+                } catch (Exception e) {
+                    Dialog.LOGGER.error("Unexpected error processing speaker component for entry '{}' (dialog '{}') for player {}: {}. Skipping speaker update.",
+                                       entry.getId(), playerSpecificSequence.getId(), player.getName().getString(), e.getMessage(), e);
+                }
+            }
+*/
             // 如果条目可见，再处理其选项的可见性
             if (entry.hasOptions()) {
                 List<DialogOption> visibleOptions = new ArrayList<>();
@@ -329,14 +364,14 @@ public class DialogManager {
                             visibleOptions.add(option);
                         } else {
                             Dialog.LOGGER.debug("Visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {} returned {}, option hidden.",
-                                               optionVisibilityCommand, option.getText(Minecraft.getInstance().level.registryAccess(), player.getName().getString()) != null ? option.getText(Minecraft.getInstance().level.registryAccess(), player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), result);
+                                               optionVisibilityCommand, option.getText(player.level().registryAccess(), player.getName().getString()) != null ? option.getText(player.level().registryAccess(), player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), result);
                         }
                     } catch (CommandSyntaxException e) {
                         Dialog.LOGGER.warn("Syntax error in visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {}: {}. Option hidden.",
-                                           optionVisibilityCommand, option.getText(Minecraft.getInstance().level.registryAccess(), player.getName().getString()) != null ? option.getText(Minecraft.getInstance().level.registryAccess(), player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
+                                           optionVisibilityCommand, option.getText(player.level().registryAccess(), player.getName().getString()) != null ? option.getText(player.level().registryAccess(), player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
                     } catch (Exception e) {
                         Dialog.LOGGER.warn("Error executing visibility command '{}' for option '{}' (dialog '{}', entry '{}') for player {}: {}. Option hidden.",
-                                           optionVisibilityCommand, option.getText(Minecraft.getInstance().level.registryAccess(), player.getName().getString()) != null ? option.getText(Minecraft.getInstance().level.registryAccess(), player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
+                                           optionVisibilityCommand, option.getText(player.level().registryAccess(), player.getName().getString()) != null ? option.getText(player.level().registryAccess(), player.getName().getString()).getString() : "<no text>", playerSpecificSequence.getId(), entry.getId(), player.getName().getString(), e.getMessage());
                     }
                 }
                 entry.setOptions(visibleOptions.toArray(new DialogOption[0]));
@@ -555,9 +590,13 @@ public class DialogManager {
     /**
      * (服务端) 在服务器上代表玩家执行命令。
      */
-    public void executeCommand(Player player, String command) {
-        if (command != null && !command.isEmpty()) {
-            NetworkHandler.sendExecuteCommandToServer(command);
+    public void executeCommands(Player player, List<String> commands) {
+        if (commands != null && !commands.isEmpty()) {
+            for (String command : commands) {
+                if (command != null && !command.isEmpty()) {
+                    NetworkHandler.sendExecuteCommandToServer(command);
+                }
+            }
         }
     }
 }

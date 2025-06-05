@@ -1,6 +1,7 @@
 package top.yourzi.dialog.model;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.google.gson.JsonArray;
@@ -36,7 +37,8 @@ public class DialogOption {
     // 选择该选项后执行的命令
     @Getter
     @Setter
-    private String command;
+    @SerializedName("commands")
+    private List<String> command;
 
     // 控制该选项是否可见的指令
     @Getter

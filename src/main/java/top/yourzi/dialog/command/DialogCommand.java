@@ -70,7 +70,6 @@ public class DialogCommand {
             // 将过滤后的对话序列转换为JSON
             String dialogJson = DialogManager.GSON.toJson(playerSpecificSequence);
 
-            source.sendSuccess(() -> Component.literal("正在向客户端发送对话: " + dialogId), false);
             // 发送包含完整对话数据的包
             top.yourzi.dialog.network.NetworkHandler.sendShowDialogToPlayer(player, dialogId, dialogJson);
             return 1;

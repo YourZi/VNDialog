@@ -38,7 +38,8 @@ public class DialogEntry {
     // 用户选择的选项文本
     private String selectedOptionText;
     // 该对话条目完成后执行的命令
-    private String command;
+    @SerializedName("commands")
+    private List<String> command;
 
     // 该对话条目的可见性命令
     @SerializedName("visibility_command")
@@ -47,6 +48,10 @@ public class DialogEntry {
     // 需要在对话中显示的物品列表
     @SerializedName("display_items")
     private List<DisplayItemInfo> displayItems;
+
+    // 背景图片信息
+    @SerializedName("background_image")
+    private BackgroundImageInfo backgroundImage;
 
     public DialogEntry() {
     }

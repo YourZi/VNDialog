@@ -6,13 +6,13 @@
   "entries": [
     {
       "id": "start",
-      "speaker": {
-        "translate": "dialog.test_dialog.speaker.tlipoca",
-        "color": "red"
-      },
-      "text": {
-        "translate": "dialog.test_dialog.entry.start.text"
-      },
+      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+      "text":
+      [
+        {
+          "translate": "dialog.test_dialog.entry.start.text"
+        }
+      ],
       "portraits": [
         {"path": "tlipoca.png", "position": "RIGHT", "brightness": 1.0, "animationType": "FADE_IN"}
       ]
@@ -24,7 +24,8 @@
       "portraits": [
         {"path": "leaf.png", "position": "LEFT", "brightness": 1.0},
         {"path": "tlipoca.png", "position": "RIGHT", "brightness": 0.5}
-      ]
+      ],
+      "next": "2"
     },
     {
       "id": "2",
@@ -123,15 +124,6 @@
       ]
     },
     {
-      "id": "hidden_entry",
-      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
-      "visibility_command": "execute if entity @s[gamemode=survival]",
-      "text": {"translate": "dialog.test_dialog.entry.hidden_entry.text"},
-      "portraits": [
-        {"path": "tlipoca_1.png"}
-      ]
-    },
-    {
       "id": "command",
       "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
       "text": {"translate": "dialog.test_dialog.entry.command.text"},
@@ -141,19 +133,39 @@
       "options": [
         {
           "text": {"translate": "dialog.test_dialog.option.weather_rain"},
-          "target": "end",
-          "command": "weather rain"
+          "target": "item",
+          "command": ["weather rain"]
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_clear"},
-          "target": "end",
-          "command": "weather clear"
+          "target": "item",
+          "command": ["weather clear"]
         },
         {
           "text": {"translate": "dialog.test_dialog.option.weather_thunder"},
-          "target": "end",
-          "command": "weather thunder"
+          "target": "item",
+          "command": ["weather thunder"]
         }
+      ]
+    },
+    {
+      "id": "background_cg",
+      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+      "text": {"translate": "dialog.test_dialog.entry.background_cg.text"},
+      "portraits": [
+        {"path": "tlipoca.png"}
+      ],
+      "background_image": {
+        "path": "background.png"
+      }
+    },
+    {
+      "id": "hidden_entry",
+      "speaker": {"translate": "dialog.test_dialog.speaker.tlipoca", "color": "red"},
+      "visibility_command": "execute if entity @s[gamemode=survival]",
+      "text": {"translate": "dialog.test_dialog.entry.hidden_entry.text"},
+      "portraits": [
+        {"path": "tlipoca_1.png"}
       ]
     },
   {

@@ -7,6 +7,8 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -18,6 +20,8 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import top.yourzi.dialog.Config;
 import top.yourzi.dialog.Dialog;
 import top.yourzi.dialog.DialogManager;
+import top.yourzi.dialog.model.BackgroundImageInfo;
+import top.yourzi.dialog.model.BackgroundRenderOption;
 import top.yourzi.dialog.model.DialogEntry;
 import top.yourzi.dialog.model.DialogOption;
 import top.yourzi.dialog.model.DialogSequence;
@@ -31,7 +35,11 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
+
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.WidgetSprites;
+
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.screens.ConfirmScreen;
@@ -136,6 +144,9 @@ public class DialogScreen extends Screen {
     private Button viewHistoryButton; // 查看历史按钮
     private Button autoPlayButton; // 自动播放按钮
 
+    // 背景图片相关
+    private BackgroundImageDisplayData backgroundImageDisplayData;
+
     // 需要在对话中显示的物品列表
     private final List<ItemStack> displayItemStacks = new ArrayList<>();
 
@@ -151,6 +162,11 @@ public class DialogScreen extends Screen {
         this.dialogEntry = dialogEntry;
         this.playerName = playerName;
         this.font = Minecraft.getInstance().font;
+
+        // 加载背景图片资源
+        if (dialogEntry.getBackgroundImage() != null && dialogEntry.getBackgroundImage().getPath() != null && !dialogEntry.getBackgroundImage().getPath().isEmpty()) {
+            this.backgroundImageDisplayData = new BackgroundImageDisplayData(dialogEntry.getBackgroundImage());
+        }
 
         // 加载多个立绘资源
         if (dialogEntry.getPortraits() != null && !dialogEntry.getPortraits().isEmpty()) {
@@ -173,12 +189,84 @@ public class DialogScreen extends Screen {
             Dialog.LOGGER.warn("No portrait configurations found in DialogEntry or the list is empty.");
         }
 
+                // 加载需要在对话中显示的物品
+                if (dialogEntry.getDisplayItems() != null && !dialogEntry.getDisplayItems().isEmpty()) {
+                    for (top.yourzi.dialog.model.DisplayItemInfo itemInfo : dialogEntry.getDisplayItems()) {
+                        if (itemInfo.getItemId() != null && !itemInfo.getItemId().isEmpty()) {
+                            try {
+                                ResourceLocation itemRl = ResourceLocation.withDefaultNamespace(itemInfo.getItemId());
+                                Item item = BuiltInRegistries.ITEM.get(itemRl);
+                                if (item != null && item != Items.AIR) {
+                                    ItemStack itemStack = new ItemStack(item, itemInfo.getCount() > 0 ? itemInfo.getCount() : 1);
+                                    if (itemInfo.getNbt() != null && !itemInfo.getNbt().isEmpty()) {
+                                        try {
+                                            CompoundTag nbtTag = TagParser.parseTag(itemInfo.getNbt());
+                                            itemStack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbtTag));
+                                        } catch (Exception e) {
+                                            Dialog.LOGGER.error("Error parsing NBT or setting custom data for display item {}: {}. NBT: '{}'", itemInfo.getItemId(), e.getMessage(), itemInfo.getNbt());
+                                        }
+                                    }
+                                    this.displayItemStacks.add(itemStack);
+                                } else {
+                                    Dialog.LOGGER.warn("Item not found or is AIR: {}. Skipping display item.", itemInfo.getItemId());
+                                }
+                            } catch (Exception e) {
+                                Dialog.LOGGER.error("Error creating ItemStack for display item {}: {}", itemInfo.getItemId(), e.getMessage());
+                            }
+                        } else {
+                            Dialog.LOGGER.warn("Encountered a display item with null or empty itemId.");
+                        }
+                    }
+                }
+
         // 检查是否由快速跳过触发
         if (DialogManager.isFastForwardingNext()) {
             this.fastForwardCooldown = 5;
             DialogManager.setFastForwardingNext(false); // 重置标记
         }
     }
+
+        // 管理背景图片显示数据
+        private static class BackgroundImageDisplayData {
+            private final ResourceLocation imageLocation;
+            private final BackgroundRenderOption renderOption;
+            private STBBackendImage image;
+            private boolean loadedSuccessfully = false;
+            private int imageWidth;
+            private int imageHeight;
+    
+            public BackgroundImageDisplayData(BackgroundImageInfo backgroundImageInfo) {
+                this.imageLocation = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, "textures/backgrounds/" + backgroundImageInfo.getPath());
+                this.renderOption = backgroundImageInfo.getRenderOption();
+                loadResource();
+            }
+    
+            private void loadResource() {
+                try {
+                    Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(imageLocation);
+                    if (resourceOptional.isPresent()) {
+                        try (InputStream inputStream = resourceOptional.get().open()) {
+                            this.image = STBBackendImage.read(inputStream);
+                            this.imageWidth = image.getWidth();
+                            this.imageHeight = image.getHeight();
+                            this.loadedSuccessfully = true;
+                        } catch (IOException e) {
+                            Dialog.LOGGER.error("Failed to load background image: {}", imageLocation, e);
+                        }
+                    } else {
+                        Dialog.LOGGER.warn("Background image resource not found: {}", imageLocation);
+                    }
+                } catch (Exception e) {
+                    Dialog.LOGGER.error("Error accessing background image resource: {}", imageLocation, e);
+                }
+            }
+    
+            public void close() {
+                if (image != null) {
+                    image.close();
+                }
+            }
+        }
 
     @Override
     protected void init() {
@@ -239,30 +327,60 @@ public class DialogScreen extends Screen {
             return;
         }
         
-        int buttonWidth = 200;
-        int buttonHeight = 20;
-        int buttonSpacing = 5;
-        int totalHeight = options.length * (buttonHeight + buttonSpacing) - buttonSpacing;
-        int startY = dialogBoxY - totalHeight - 10;
+        int buttonWidth = 200; // 默认值
+        int buttonHeight = 20; // 默认值
+        int textureActualWidth = 200; // 默认图集宽度
+        int textureActualHeight = 40; // 默认图集高度
+        ResourceLocation buttonTextureLocation = ResourceLocation.fromNamespaceAndPath(Dialog.MODID, "textures/buttons/button.png");
+        WidgetSprites sprites = new WidgetSprites(
+            buttonTextureLocation,
+            buttonTextureLocation,
+            buttonTextureLocation,
+            buttonTextureLocation);
         
+            try {
+                Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(buttonTextureLocation);
+                if (resourceOptional.isPresent()) {
+                    try (InputStream inputStream = resourceOptional.get().open()) {
+                        STBBackendImage image = STBBackendImage.read(inputStream);
+                        textureActualWidth = image.getWidth() * 60 / textureActualHeight;
+                        textureActualHeight = 40;
+                        buttonWidth = textureActualWidth;
+                        buttonHeight = textureActualHeight / 2;
+                        image.close();
+                    } catch (IOException e) {
+                        Dialog.LOGGER.error("Failed to load button texture to get dimensions: {}", buttonTextureLocation, e);
+                    }
+                } else {
+                    Dialog.LOGGER.warn("Button texture resource not found: {}", buttonTextureLocation);
+                }
+            } catch (Exception e) {
+                Dialog.LOGGER.error("Error accessing button texture resource: {}", buttonTextureLocation, e);
+            }
+
+            int buttonSpacing = 5;
+            int totalHeight = options.length * (buttonHeight + buttonSpacing) - buttonSpacing;
+            int startY = dialogBoxY - totalHeight - 10;
+
         for (int i = 0; i < options.length; i++) {
             DialogOption option = options[i];
             int buttonY = startY + i * (buttonHeight + buttonSpacing);
             
             OptionButton button = new OptionButton(
-                    (width - buttonWidth) / 2,
-                    buttonY,
-                    buttonWidth, buttonHeight,
-                    // 使用原始文本，因为选项文本是从对话数据中动态加载的
-                    option.getText(Minecraft.getInstance().level.registryAccess(), playerName),
-                    b -> {
+                    (width - buttonWidth) / 2, // x
+                    buttonY,                   // y
+                    buttonWidth,               // width
+                    buttonHeight,              // height
+                    sprites, // WidgetSprites - 您需要根据需要提供合适的 WidgetSprites
+                    b -> {                     // OnPress
                         // 执行选项指令（如果存在）
                         if (option.getCommand() != null && !option.getCommand().isEmpty()) {
-                            DialogManager.getInstance().executeCommand(this.getMinecraft().player, option.getCommand());
+                            DialogManager.getInstance().executeCommands(this.getMinecraft().player, option.getCommand());
                         }
                         DialogManager.getInstance().recordChoiceForCurrentDialog(option.getText(Minecraft.getInstance().level.registryAccess(), playerName).getString());
                         DialogManager.getInstance().jumpToDialog(option.getTargetId());
-                    }
+                    },
+                    option.getText(Minecraft.getInstance().level.registryAccess(), playerName) // Component message
             );
             
             optionButtons.add(button);
@@ -278,6 +396,10 @@ public class DialogScreen extends Screen {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 
+        // 首先渲染背景图片 (如果存在且加载成功)
+        if (this.backgroundImageDisplayData != null && this.backgroundImageDisplayData.loadedSuccessfully) {
+            renderBackgroundImage(guiGraphics, this.backgroundImageDisplayData);
+        }
 
         // 如果正在显示历史记录，则渲染历史记录界面
         if (showingHistory) {
@@ -456,13 +578,44 @@ public class DialogScreen extends Screen {
                 }
             }
 
+            // 渲染对话中展示的物品
+            if (!this.displayItemStacks.isEmpty() && textFullyDisplayed) {
+                int itemSize = 16;
+                int itemPadding = 4;
+                int totalItemWidth = (this.displayItemStacks.size() * itemSize) + (Math.max(0, this.displayItemStacks.size() - 1) * itemPadding);
+            
+                int startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
+                int itemY = dialogBoxY - itemSize - 5;
+            
+                for (ItemStack itemStack : this.displayItemStacks) {
+            
+                    guiGraphics.renderItem(itemStack, startX, itemY);
+            
+                    if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
+                        guiGraphics.fill(startX, itemY, startX + itemSize, itemY + itemSize, 0x80000000);
+                    }
+            
+                    guiGraphics.renderItemDecorations(this.font, itemStack, startX, itemY);
+            
+                    startX += itemSize + itemPadding;
+                }
+            
+                startX = dialogBoxX + (dialogBoxWidth - totalItemWidth) / 2;
+                for (ItemStack itemStack : this.displayItemStacks) {
+                    if (mouseX >= startX && mouseX < startX + itemSize && mouseY >= itemY && mouseY < itemY + itemSize) {
+                        guiGraphics.renderTooltip(this.font, itemStack, mouseX, mouseY);
+                    }
+                    startX += itemSize + itemPadding;
+                }
+            }
+
             // 如果自动播放开启，且文本完全显示，且没有选项，则延迟后自动前进
             if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions()) {
                 if (System.currentTimeMillis() - lastCharTime > Config.AUTO_ADVANCE_DELAY.get()) { // lastCharTime 在文本完全显示后更新
                     DialogManager.getInstance().showNextDialog();
                     // 执行当前对话条目的指令
                     if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
-                        DialogManager.getInstance().executeCommand(this.getMinecraft().player, dialogEntry.getCommand());
+                        DialogManager.getInstance().executeCommands(this.getMinecraft().player, dialogEntry.getCommand());
                     }
                     return;
                 }
@@ -568,7 +721,7 @@ public class DialogScreen extends Screen {
                 updateAutoPlayButtonText();
             }
             if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
-                DialogManager.getInstance().executeCommand(this.getMinecraft().player, dialogEntry.getCommand());
+                DialogManager.getInstance().executeCommands(this.getMinecraft().player, dialogEntry.getCommand());
             }
             DialogManager.getInstance().showNextDialog();
             return true;
@@ -634,7 +787,7 @@ public class DialogScreen extends Screen {
                         // 如果没有选项，则推进对话
                         // 执行当前对话条目的指令（如果存在）
                         if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
-                            DialogManager.getInstance().executeCommand(this.getMinecraft().player, dialogEntry.getCommand());
+                            DialogManager.getInstance().executeCommands(this.getMinecraft().player, dialogEntry.getCommand());
                         }
                         DialogManager.getInstance().showNextDialog();
                         return true; // 消费点击事件
@@ -878,5 +1031,72 @@ public class DialogScreen extends Screen {
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    private void renderBackgroundImage(GuiGraphics guiGraphics, BackgroundImageDisplayData bgData) {
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, bgData.imageLocation);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        int screenWidth = this.width;
+        int screenHeight = this.height;
+        int imgWidth = bgData.imageWidth;
+        int imgHeight = bgData.imageHeight;
+
+        BackgroundRenderOption renderOption = bgData.renderOption!= null? bgData.renderOption : BackgroundRenderOption.FILL;
+
+        switch (renderOption) {
+            case FILL:
+                float screenAspect = (float) screenWidth / screenHeight;
+                float imageAspect = (float) imgWidth / imgHeight;
+                int drawWidth, drawHeight, drawX, drawY;
+                if (imageAspect > screenAspect) {
+                    drawHeight = screenHeight;
+                    drawWidth = (int) (screenHeight * imageAspect);
+                    drawX = (screenWidth - drawWidth) / 2;
+                    drawY = 0;
+                } else {
+                    drawWidth = screenWidth;
+                    drawHeight = (int) (screenWidth / imageAspect);
+                    drawX = 0;
+                    drawY = (screenHeight - drawHeight) / 2;
+                }
+                guiGraphics.blit(bgData.imageLocation, drawX, drawY, drawWidth, drawHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+            case FIT:
+                screenAspect = (float) screenWidth / screenHeight;
+                imageAspect = (float) imgWidth / imgHeight;
+                if (imageAspect > screenAspect) {
+                    drawWidth = screenWidth;
+                    drawHeight = (int) (screenWidth / imageAspect);
+                } else {
+                    drawHeight = screenHeight;
+                    drawWidth = (int) (screenHeight * imageAspect);
+                }
+                drawX = (screenWidth - drawWidth) / 2;
+                drawY = (screenHeight - drawHeight) / 2;
+                guiGraphics.blit(bgData.imageLocation, drawX, drawY, drawWidth, drawHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+            case STRETCH:
+                guiGraphics.blit(bgData.imageLocation, 0, 0, screenWidth, screenHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+            case TILE:
+                for (int y = 0; y < screenHeight; y += imgHeight) {
+                    for (int x = 0; x < screenWidth; x += imgWidth) {
+                        int w = Math.min(imgWidth, screenWidth - x);
+                        int h = Math.min(imgHeight, screenHeight - y);
+                        guiGraphics.blit(bgData.imageLocation, x, y, 0, 0, w, h, imgWidth, imgHeight);
+                    }
+                }
+                break;
+            case CENTER:
+                drawX = (screenWidth - imgWidth) / 2;
+                drawY = (screenHeight - imgHeight) / 2;
+                guiGraphics.blit(bgData.imageLocation, drawX, drawY, imgWidth, imgHeight, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
+                break;
+        }
+        RenderSystem.disableBlend();
     }
 }
