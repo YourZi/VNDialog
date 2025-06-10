@@ -527,6 +527,11 @@ public class DialogManager {
             return;
         }
         
+        // 在跳转到下一个对话前，执行当前对话条目的命令
+        if (currentEntry.getCommand() != null && !currentEntry.getCommand().isEmpty()) {
+            executeCommands(Minecraft.getInstance().player, currentEntry.getCommands());
+        }
+        
         DialogEntry nextEntry = currentSequence.getNextEntry(currentEntry);
         if (nextEntry == null) {
             // 对话结束，关闭对话界面

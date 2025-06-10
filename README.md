@@ -211,7 +211,8 @@
 ```json
 {
   "path": "your_background_image.png",
-  "render_option": "FILL"
+  "render_option": "FILL",
+  "animation_type": "FADE_IN"
 }
 ```
 
@@ -225,6 +226,10 @@
     - `"STRETCH"`: 图片不会等比缩放，拉伸图片使其填满整个屏幕区域。
     - `"TILE"`: 如果图片没有屏幕区域大，则图片会重复地铺在屏幕区域，直至填满。如果图片大于屏幕区域，则无视屏幕大小，溢出部分不会显示。
     - `"CENTER"`: 图片按照原大小，整体居中显示在屏幕中央。
+- **`animation_type` (可选, 默认为 `NONE`)**: `String`
+  - 背景图片的动画类型。可选值：
+    - `"NONE"`: 无动画效果，背景图片立即显示。
+    - `"FADE_IN"`: 渐入效果，背景图片在0.5秒内从透明渐变到不透明。
 
 ### 🎁 物品展示
 

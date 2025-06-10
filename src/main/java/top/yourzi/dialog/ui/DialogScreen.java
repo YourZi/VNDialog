@@ -88,6 +88,10 @@ public class DialogScreen extends Screen {
         // 加载背景图片资源
         if (dialogEntry.getBackgroundImage() != null && dialogEntry.getBackgroundImage().getPath() != null && !dialogEntry.getBackgroundImage().getPath().isEmpty()) {
             this.backgroundImageDisplayData = new BackgroundImageDisplayData(dialogEntry.getBackgroundImage());
+            // 根据动画类型设置动画开始时间
+            if (this.backgroundImageDisplayData.animationType == BackgroundAnimationType.FADE_IN) {
+                this.backgroundImageDisplayData.animationStartTime = System.currentTimeMillis();
+            }
             this.backgroundFadeStartTime = System.currentTimeMillis(); // 初始化背景淡入开始时间
         }
 
@@ -153,14 +157,17 @@ public class DialogScreen extends Screen {
     private static class BackgroundImageDisplayData {
         private final ResourceLocation imageLocation;
         private final BackgroundRenderOption renderOption;
+        private final BackgroundAnimationType animationType;
         private STBBackendImage image;
         private boolean loadedSuccessfully = false;
         private int imageWidth;
         private int imageHeight;
+        private long animationStartTime = -1;
 
         public BackgroundImageDisplayData(BackgroundImageInfo backgroundImageInfo) {
             this.imageLocation = new ResourceLocation(Dialog.MODID, "textures/backgrounds/" + backgroundImageInfo.getPath());
             this.renderOption = backgroundImageInfo.getRenderOption();
+            this.animationType = backgroundImageInfo.getAnimationType();
             loadResource();
         }
 
@@ -1065,8 +1072,10 @@ public class DialogScreen extends Screen {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, bgData.imageLocation);
         
-        // 计算淡入淡出效果的透明度
+        // 计算基于动画类型的透明度
         float alpha = 1.0F;
+        
+        // 优先处理关闭时的淡出效果
         if (isClosing && backgroundFadeOutStartTime > 0) {
             // 淡出阶段：从1到0
             long elapsedTime = System.currentTimeMillis() - backgroundFadeOutStartTime;
@@ -1075,11 +1084,21 @@ public class DialogScreen extends Screen {
             } else {
                 alpha = 0.0F;
             }
-        } else if (backgroundFadeStartTime > 0) {
-            // 淡入阶段：从0到1
-            long elapsedTime = System.currentTimeMillis() - backgroundFadeStartTime;
-            if (elapsedTime < BACKGROUND_FADE_DURATION_MS) {
-                alpha = Math.min(1.0F, (float) elapsedTime / BACKGROUND_FADE_DURATION_MS);
+        } else {
+            // 根据动画类型计算透明度
+            switch (bgData.animationType) {
+                case FADE_IN:
+                    if (bgData.animationStartTime > 0) {
+                        long elapsedTime = System.currentTimeMillis() - bgData.animationStartTime;
+                        if (elapsedTime < BACKGROUND_FADE_DURATION_MS) {
+                            alpha = Math.min(1.0F, (float) elapsedTime / BACKGROUND_FADE_DURATION_MS);
+                        }
+                    }
+                    break;
+                case NONE:
+                default:
+                    alpha = 1.0F;
+                    break;
             }
         }
         
