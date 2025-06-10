@@ -167,7 +167,7 @@ public class DialogScreen extends Screen {
         public BackgroundImageDisplayData(BackgroundImageInfo backgroundImageInfo) {
             this.imageLocation = new ResourceLocation(Dialog.MODID, "textures/backgrounds/" + backgroundImageInfo.getPath());
             this.renderOption = backgroundImageInfo.getRenderOption();
-            this.animationType = backgroundImageInfo.getAnimationType();
+            this.animationType = backgroundImageInfo.getAnimationType() != null ? backgroundImageInfo.getAnimationType() : BackgroundAnimationType.NONE;
             loadResource();
         }
 
