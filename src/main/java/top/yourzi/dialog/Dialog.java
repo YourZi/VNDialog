@@ -22,7 +22,8 @@ public class Dialog {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // 注册配置项
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, top.yourzi.dialog.config.ClientConfig.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, top.yourzi.dialog.config.ServerConfig.SPEC);
 
         // 注册事件监听器
         modEventBus.addListener(this::onCommonSetup);

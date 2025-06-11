@@ -203,8 +203,8 @@ public class DialogScreen extends Screen {
         super.init();
 
         // 设置对话框位置和大小
-        dialogBoxWidth = Config.DIALOG_BOX_WIDTH.get();
-        dialogBoxHeight = Config.DIALOG_BOX_HEIGHT.get();
+        dialogBoxWidth = top.yourzi.dialog.config.ClientConfig.DIALOG_BOX_WIDTH.get();
+        dialogBoxHeight = top.yourzi.dialog.config.ClientConfig.DIALOG_BOX_HEIGHT.get();
         dialogBoxX = (width - dialogBoxWidth) / 2;
         dialogBoxY = height - dialogBoxHeight - 20;
 
@@ -264,7 +264,7 @@ public class DialogScreen extends Screen {
         int textureActualHeight = 40; // 默认图集高度
 
         // 根据配置决定使用自定义纹理还是原版纹理
-        if (Config.USE_CUSTOM_BUTTON_TEXTURE.get()) {
+        if (top.yourzi.dialog.config.ClientConfig.USE_CUSTOM_BUTTON_TEXTURE.get()) {
             // 使用自定义纹理
             buttonTextureLocation = new ResourceLocation(Dialog.MODID, "textures/buttons/button.png");
             try {
@@ -309,7 +309,7 @@ public class DialogScreen extends Screen {
             int yTexStart = 0;
             int yDiffText = buttonHeight;
             
-            if (!Config.USE_CUSTOM_BUTTON_TEXTURE.get()) {
+            if (!top.yourzi.dialog.config.ClientConfig.USE_CUSTOM_BUTTON_TEXTURE.get()) {
                 // 原版按钮纹理的起始位置和差值
                 xTexStart = 0;
                 yTexStart = 66;
@@ -382,7 +382,7 @@ public class DialogScreen extends Screen {
                     long currentTime = System.currentTimeMillis();
                     float progress = 1.0f;
 
-                    if (Config.ENABLE_PORTRAIT_ANIMATIONS.get() && displayData.animationType != PortraitAnimationType.NONE && displayData.animationStartTime != -1) {
+                    if (top.yourzi.dialog.config.ClientConfig.ENABLE_PORTRAIT_ANIMATIONS.get() && displayData.animationType != PortraitAnimationType.NONE && displayData.animationStartTime != -1) {
                         long elapsedTime = currentTime - displayData.animationStartTime;
                         if (elapsedTime < ANIMATION_DURATION_MS) {
                             progress = (float) elapsedTime / ANIMATION_DURATION_MS;
@@ -464,15 +464,15 @@ public class DialogScreen extends Screen {
             } catch (Exception e) {
                 Dialog.LOGGER.error("Failed to render dialog background image: " + backgroundImagePath + ". Falling back to solid color.", e);
                 // 回退到纯色背景
-                int backgroundColor = Config.DIALOG_BACKGROUND_COLOR.get();
-                int opacity = Config.DIALOG_BACKGROUND_OPACITY.get();
+                int backgroundColor = top.yourzi.dialog.config.ClientConfig.DIALOG_BACKGROUND_COLOR.get();
+        int opacity = top.yourzi.dialog.config.ClientConfig.DIALOG_BACKGROUND_OPACITY.get();
                 int color = (opacity << 24) | (backgroundColor & 0xFFFFFF);
                 guiGraphics.fill(dialogBoxX, dialogBoxY, dialogBoxX + dialogBoxWidth, dialogBoxY + dialogBoxHeight, color);
             }
         } else {
 
-            int backgroundColor = Config.DIALOG_BACKGROUND_COLOR.get();
-            int opacity = Config.DIALOG_BACKGROUND_OPACITY.get();
+            int backgroundColor = top.yourzi.dialog.config.ClientConfig.DIALOG_BACKGROUND_COLOR.get();
+            int opacity = top.yourzi.dialog.config.ClientConfig.DIALOG_BACKGROUND_OPACITY.get();
             int color = (opacity << 24) | (backgroundColor & 0xFFFFFF);
             guiGraphics.fill(dialogBoxX, dialogBoxY, dialogBoxX + dialogBoxWidth, dialogBoxY + dialogBoxHeight, color);
         }
@@ -486,13 +486,13 @@ public class DialogScreen extends Screen {
         }
 
         // 渲染对话文本
-        int padding = Config.DIALOG_BOX_PADDING.get();
+        int padding = top.yourzi.dialog.config.ClientConfig.DIALOG_BOX_PADDING.get();
         int textX = dialogBoxX + padding;
         int textY = dialogBoxY + padding;
 
         // 如果显示说话者名称且有说话者
         Component speakerComponent = dialogEntry.getSpeaker(playerName);
-        if (Config.SHOW_SPEAKER_NAME.get() && speakerComponent != null && !speakerComponent.getString().isEmpty()) {
+        if (top.yourzi.dialog.config.ClientConfig.SHOW_SPEAKER_NAME.get() && speakerComponent != null && !speakerComponent.getString().isEmpty()) {
             guiGraphics.drawString(font, speakerComponent, textX, textY, 0xFFFFFF);
             textY += font.lineHeight + 5;
         }
@@ -501,7 +501,7 @@ public class DialogScreen extends Screen {
         String rawText = dialogEntry.getText(playerName).getString();
         if (rawText != null && !rawText.isEmpty()) {
             int maxWidth = dialogBoxWidth - (padding * 2);
-            int textAnimationSpeed = Config.TEXT_ANIMATION_SPEED.get(); // 每秒字符数
+            int textAnimationSpeed = top.yourzi.dialog.config.ClientConfig.TEXT_ANIMATION_SPEED.get(); // 每秒字符数
 
             if (textAnimationSpeed <= 0) { // 立即显示
                 textFullyDisplayed = true;
@@ -560,7 +560,7 @@ public class DialogScreen extends Screen {
 
             // 如果自动播放开启，且文本完全显示，且没有选项，则延迟后自动前进
             if (DialogManager.isAutoPlaying() && textFullyDisplayed && !dialogEntry.hasOptions()) {
-                if (System.currentTimeMillis() - lastCharTime > Config.AUTO_ADVANCE_DELAY.get()) { // lastCharTime 在文本完全显示后更新
+                if (System.currentTimeMillis() - lastCharTime > top.yourzi.dialog.config.ClientConfig.AUTO_ADVANCE_DELAY.get()) { // lastCharTime 在文本完全显示后更新
                     DialogManager.getInstance().showNextDialog();
                     // 执行当前对话条目的指令
                     if (dialogEntry.getCommand() != null && !dialogEntry.getCommand().isEmpty()) {
@@ -584,7 +584,7 @@ public class DialogScreen extends Screen {
             }
 
             for (net.minecraft.util.FormattedCharSequence line : lines) {
-                guiGraphics.drawString(font, line, textX, textY, Config.DIALOG_TEXT_COLOR.get());
+                guiGraphics.drawString(font, line, textX, textY, top.yourzi.dialog.config.ClientConfig.DIALOG_TEXT_COLOR.get());
                 textY += font.lineHeight;
             }
         }
@@ -619,12 +619,18 @@ public class DialogScreen extends Screen {
         }
 
         if (isCtrlPressed && !dialogEntry.hasOptions()) {
-            if (fastForwardCooldown > 0) {
-                fastForwardCooldown--;
-            } else {
-                DialogManager.setFastForwardingNext(true);
-                DialogManager.getInstance().showNextDialog();
-                return; // 立即跳到下一条，避免渲染当前帧的剩余部分
+            // 检查服务端配置和对话条目配置是否允许跳过
+            boolean serverAllowsSkip = top.yourzi.dialog.config.ServerConfig.ALLOW_SKIP_DIALOG.get();
+            boolean entryAllowsSkip = dialogEntry.isSkipAllowed();
+            
+            if (serverAllowsSkip && entryAllowsSkip) {
+                if (fastForwardCooldown > 0) {
+                    fastForwardCooldown--;
+                } else {
+                    DialogManager.setFastForwardingNext(true);
+                    DialogManager.getInstance().showNextDialog();
+                    return; // 立即跳到下一条，避免渲染当前帧的剩余部分
+                }
             }
         } else {
             // 如果Ctrl未按下或有选项，则清除快速跳过标记，确保正常流程
@@ -634,7 +640,7 @@ public class DialogScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return Config.IS_PAUSE_SCREEN.get();
+        return top.yourzi.dialog.config.ClientConfig.IS_PAUSE_SCREEN.get();
     }
 
     @Override
@@ -1029,7 +1035,7 @@ public class DialogScreen extends Screen {
                 this.position = position != null ? position : PortraitPosition.RIGHT; // 位置
                 this.animationType = animationType != null ? animationType : PortraitAnimationType.NONE; // 动画类型
                 loadDimensions();
-                if (Config.ENABLE_PORTRAIT_ANIMATIONS.get() && loadedSuccessfully && this.animationType != PortraitAnimationType.NONE) {
+                if (top.yourzi.dialog.config.ClientConfig.ENABLE_PORTRAIT_ANIMATIONS.get() && loadedSuccessfully && this.animationType != PortraitAnimationType.NONE) {
                     this.animationStartTime = System.currentTimeMillis();
                 }
             } else {

@@ -106,12 +106,22 @@
 
 每个对话条目定义了对话中的一个片段，包括谁在说话、说什么、显示什么立绘等。没有特殊要求的情况下会按顺序播放。
 
+#### 🚫 跳过控制
+
+你可以通过以下方式控制对话的跳过行为：
+
+1. **服务端配置**：在服务端配置文件中设置 `allowSkipDialog` 为 `false` 可以全局禁止玩家跳过对话
+2. **对话条目配置**：在单个对话条目中设置 `"allowSkip": false` 可以禁止跳过该条对话
+
+只有当服务端配置允许跳过且对话条目允许跳过时，玩家才能使用Ctrl键跳过对话。
+
 ```json
 {
   "id": "unique_entry_id",
   "speaker": "Speaker Name",
   "text": "Dialog text.",
   "next": "entry_id_to_go_to_after_this_entry",
+  "allowSkip": false,
   "command": [
     //... 指令列表...
   ],

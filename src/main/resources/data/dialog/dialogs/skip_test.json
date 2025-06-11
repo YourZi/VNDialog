@@ -1,0 +1,35 @@
+{
+  "id": "skip_test",
+  "title": "跳过测试对话",
+  "description": "测试跳过对话功能的示例对话",
+  "entries": [
+    {
+      "id": "entry1",
+      "text": "这是第一条对话，可以跳过。",
+      "speaker": "测试角色",
+      "allowSkip": true
+    },
+    {
+      "id": "entry2",
+      "text": "这是第二条对话，不能跳过！请仔细阅读。",
+      "speaker": "测试角色",
+      "allowSkip": false
+    },
+    {
+      "id": "entry3",
+      "text": "这是第三条对话，未设置allowSkip，默认可以跳过。",
+      "speaker": "测试角色"
+    },
+    {
+      "id": "entry4",
+      "text": "测试完成！现在你可以选择下一步操作。",
+      "speaker": "测试角色",
+      "options": [
+        {
+          "text": "结束对话",
+          "target": "end"
+        }
+      ]
+    }
+  ]
+}

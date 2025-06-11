@@ -43,6 +43,18 @@ public class DialogEntry {
     @SerializedName("command") // 保持JSON字段名为command
     private List<String> commands;
 
+    // 是否允许跳过此对话条目
+    @SerializedName("allowSkip")
+    private Boolean allowSkip;
+
+    /**
+     * 检查是否允许跳过此对话条目
+     * @return 如果允许跳过返回true，否则返回false。如果未设置则默认为true
+     */
+    public boolean isSkipAllowed() {
+        return allowSkip == null || allowSkip;
+    }
+
     // 为了兼容旧的单个命令的JSON格式，添加一个辅助的setter
     public void setCommand(String command) {
         if (this.commands == null) {
