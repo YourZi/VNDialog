@@ -18,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.lwjgl.glfw.GLFW;
-import top.yourzi.dialog.Config;
 import top.yourzi.dialog.Dialog;
 import top.yourzi.dialog.DialogManager;
 import top.yourzi.dialog.model.*;
