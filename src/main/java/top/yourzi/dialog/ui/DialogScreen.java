@@ -219,7 +219,7 @@ public class DialogScreen extends Screen {
         int historyYTexStart = 0;
         int historyYDiffText = historyButtonHeight;
         int historyTextureWidth = 256;
-        int historyTextureHeight = 256;
+        int historyTextureHeight = 128;
         
         // 优先使用本地自定义按钮图集，如果没有则使用原版纹理
         ResourceLocation customButtonAtlas = new ResourceLocation(Dialog.MODID, "textures/buttons/button_atlas.png");
@@ -242,11 +242,15 @@ public class DialogScreen extends Screen {
             historyXTexStart = 0;
             historyYTexStart = 66;
             historyYDiffText = 20;
+            historyTextureWidth = 256;
+            historyTextureHeight = 256;
         } else {
             // 自定义图集中历史记录按钮的位置 (小按钮区域左侧)
             historyXTexStart = 200;
             historyYTexStart = 0;
             historyYDiffText = 20;
+            historyTextureWidth = 256;
+            historyTextureHeight = 128;
         }
         
         this.viewHistoryButton = new ImageButton(
@@ -270,7 +274,7 @@ public class DialogScreen extends Screen {
         int autoPlayYTexStart = 0;
         int autoPlayYDiffText = autoPlayButtonHeight;
         int autoPlayTextureWidth = 256;
-        int autoPlayTextureHeight = 256;
+        int autoPlayTextureHeight = 128;
         
         boolean useCustomAutoPlayTexture = false;
         
@@ -291,11 +295,15 @@ public class DialogScreen extends Screen {
             autoPlayXTexStart = 0;
             autoPlayYTexStart = 66;
             autoPlayYDiffText = 20;
+            autoPlayTextureWidth = 256;
+            autoPlayTextureHeight = 256;
         } else {
             // 自定义图集中自动播放按钮的位置 (小按钮区域中间)
             autoPlayXTexStart = 220;
             autoPlayYTexStart = 0;
             autoPlayYDiffText = 20;
+            autoPlayTextureWidth = 256;
+            autoPlayTextureHeight = 128;
         }
         
         this.autoPlayButton = new ImageButton(
@@ -329,7 +337,7 @@ public class DialogScreen extends Screen {
         int closeYTexStart = 0;
         int closeYDiffText = closeButtonHeight;
         int closeTextureWidth = 256;
-        int closeTextureHeight = 256;
+        int closeTextureHeight = 128;
         
         boolean useCustomCloseTexture = false;
         
@@ -350,11 +358,15 @@ public class DialogScreen extends Screen {
             closeXTexStart = 0;
             closeYTexStart = 66;
             closeYDiffText = 20;
+            closeTextureWidth = 256;
+            closeTextureHeight = 256;
         } else {
             // 自定义图集中关闭按钮的位置 (中等按钮区域)
             closeXTexStart = 0;
             closeYTexStart = 40;
             closeYDiffText = 20;
+            closeTextureWidth = 256;
+            closeTextureHeight = 128;
         }
         
         this.closeHistoryButton = new ImageButton(
