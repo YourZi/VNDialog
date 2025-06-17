@@ -532,6 +532,15 @@ public class DialogManager {
             executeCommands(Minecraft.getInstance().player, currentEntry.getCommands());
         }
         
+        // 检查当前对话条目是否设置了结束对话标记
+        if (currentEntry.isEndDialog()) {
+            // 强制结束对话，关闭对话界面
+            Minecraft.getInstance().setScreen(null);
+            currentSequence = null;
+            currentEntry = null;
+            return;
+        }
+        
         DialogEntry nextEntry = currentSequence.getNextEntry(currentEntry);
         if (nextEntry == null) {
             // 对话结束，关闭对话界面

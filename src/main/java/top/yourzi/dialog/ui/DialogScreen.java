@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
@@ -70,9 +71,9 @@ public class DialogScreen extends Screen {
     private boolean showingHistory = false;
     private int historyScrollOffset = 0;
     private List<DialogEntry> historyEntries = new ArrayList<>();
-    private Button closeHistoryButton; // 关闭历史记录按钮
-    private Button viewHistoryButton; // 查看历史按钮
-    private Button autoPlayButton; // 自动播放按钮
+    private ImageButton closeHistoryButton; // 关闭历史记录按钮
+    private ImageButton viewHistoryButton; // 查看历史按钮
+    private ImageButton autoPlayButton; // 自动播放按钮
     // 滚动条相关
     private int totalHistoryContentHeight = 0;
     private boolean canScrollHistoryDown = false;
@@ -211,21 +212,101 @@ public class DialogScreen extends Screen {
         int historyButtonWidth = 20;
         int historyButtonHeight = 20;
         int historyButtonPadding = 5;
-        this.viewHistoryButton = Button.builder(Component.literal("▲"), (button) -> {
-            toggleHistoryScreen();
-        }).bounds(dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding,
+        
+        // 获取按钮纹理信息
+        ResourceLocation historyButtonTexture;
+        int historyXTexStart = 0;
+        int historyYTexStart = 0;
+        int historyYDiffText = historyButtonHeight;
+        int historyTextureWidth = 256;
+        int historyTextureHeight = 256;
+        
+        // 优先使用本地自定义按钮图集，如果没有则使用原版纹理
+        ResourceLocation customButtonAtlas = new ResourceLocation(Dialog.MODID, "textures/buttons/button_atlas.png");
+        boolean useCustomTexture = false;
+        
+        try {
+            Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(customButtonAtlas);
+            if (resourceOptional.isPresent()) {
+                historyButtonTexture = customButtonAtlas;
+                useCustomTexture = true;
+            } else {
+                historyButtonTexture = new ResourceLocation("minecraft", "textures/gui/widgets.png");
+            }
+        } catch (Exception e) {
+            historyButtonTexture = new ResourceLocation("minecraft", "textures/gui/widgets.png");
+        }
+        
+        if (!useCustomTexture) {
+            // 原版按钮纹理的起始位置和差值
+            historyXTexStart = 0;
+            historyYTexStart = 66;
+            historyYDiffText = 20;
+        } else {
+            // 自定义图集中历史记录按钮的位置 (小按钮区域左侧)
+            historyXTexStart = 200;
+            historyYTexStart = 0;
+            historyYDiffText = 20;
+        }
+        
+        this.viewHistoryButton = new ImageButton(
+                dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding,
                 dialogBoxY + dialogBoxHeight - historyButtonHeight - historyButtonPadding,
-                historyButtonWidth, historyButtonHeight).build();
+                historyButtonWidth, historyButtonHeight,
+                historyXTexStart, historyYTexStart, historyYDiffText,
+                historyButtonTexture, historyTextureWidth, historyTextureHeight,
+                (button) -> toggleHistoryScreen(),
+                Component.literal("▲")
+        );
         this.addRenderableWidget(this.viewHistoryButton);
 
         // 初始化自动播放按钮 (位于历史记录按钮左侧)
         int autoPlayButtonWidth = 20;
         int autoPlayButtonHeight = 20;
-        this.autoPlayButton = Button.builder(Component.literal("▶"), (button) -> {
-            toggleAutoPlay();
-        }).bounds(dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding - autoPlayButtonWidth - historyButtonPadding,
+        
+        // 获取自动播放按钮纹理信息
+        ResourceLocation autoPlayButtonTexture;
+        int autoPlayXTexStart = 0;
+        int autoPlayYTexStart = 0;
+        int autoPlayYDiffText = autoPlayButtonHeight;
+        int autoPlayTextureWidth = 256;
+        int autoPlayTextureHeight = 256;
+        
+        boolean useCustomAutoPlayTexture = false;
+        
+        try {
+            Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(customButtonAtlas);
+            if (resourceOptional.isPresent()) {
+                autoPlayButtonTexture = customButtonAtlas;
+                useCustomAutoPlayTexture = true;
+            } else {
+                autoPlayButtonTexture = new ResourceLocation("minecraft", "textures/gui/widgets.png");
+            }
+        } catch (Exception e) {
+            autoPlayButtonTexture = new ResourceLocation("minecraft", "textures/gui/widgets.png");
+        }
+        
+        if (!useCustomAutoPlayTexture) {
+            // 原版按钮纹理的起始位置和差值
+            autoPlayXTexStart = 0;
+            autoPlayYTexStart = 66;
+            autoPlayYDiffText = 20;
+        } else {
+            // 自定义图集中自动播放按钮的位置 (小按钮区域中间)
+            autoPlayXTexStart = 220;
+            autoPlayYTexStart = 0;
+            autoPlayYDiffText = 20;
+        }
+        
+        this.autoPlayButton = new ImageButton(
+                dialogBoxX + dialogBoxWidth - historyButtonWidth - historyButtonPadding - autoPlayButtonWidth - historyButtonPadding,
                 dialogBoxY + dialogBoxHeight - autoPlayButtonHeight - historyButtonPadding,
-                autoPlayButtonWidth, autoPlayButtonHeight).build();
+                autoPlayButtonWidth, autoPlayButtonHeight,
+                autoPlayXTexStart, autoPlayYTexStart, autoPlayYDiffText,
+                autoPlayButtonTexture, autoPlayTextureWidth, autoPlayTextureHeight,
+                (button) -> toggleAutoPlay(),
+                Component.literal("▶")
+        );
         this.addRenderableWidget(this.autoPlayButton);
         updateAutoPlayButtonText(); // 初始化按钮文本
 
@@ -239,9 +320,51 @@ public class DialogScreen extends Screen {
         this.optionButtonsCreated = false; // 初始化选项按钮创建标记
 
         // 初始化关闭历史记录按钮 (用于关闭历史查看界面)
-        this.closeHistoryButton = Button.builder(Component.literal("-▼-"), (button) -> {
-            toggleHistoryScreen();
-        }).bounds(this.width / 2 - 50, this.height - 30, 60, 20).build();
+        int closeButtonWidth = 60;
+        int closeButtonHeight = 20;
+        
+        // 获取关闭按钮纹理信息
+        ResourceLocation closeButtonTexture;
+        int closeXTexStart = 0;
+        int closeYTexStart = 0;
+        int closeYDiffText = closeButtonHeight;
+        int closeTextureWidth = 256;
+        int closeTextureHeight = 256;
+        
+        boolean useCustomCloseTexture = false;
+        
+        try {
+            Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(customButtonAtlas);
+            if (resourceOptional.isPresent()) {
+                closeButtonTexture = customButtonAtlas;
+                useCustomCloseTexture = true;
+            } else {
+                closeButtonTexture = new ResourceLocation("minecraft", "textures/gui/widgets.png");
+            }
+        } catch (Exception e) {
+            closeButtonTexture = new ResourceLocation("minecraft", "textures/gui/widgets.png");
+        }
+        
+        if (!useCustomCloseTexture) {
+            // 原版按钮纹理的起始位置和差值
+            closeXTexStart = 0;
+            closeYTexStart = 66;
+            closeYDiffText = 20;
+        } else {
+            // 自定义图集中关闭按钮的位置 (中等按钮区域)
+            closeXTexStart = 0;
+            closeYTexStart = 40;
+            closeYDiffText = 20;
+        }
+        
+        this.closeHistoryButton = new ImageButton(
+                this.width / 2 - 50, this.height - 30,
+                closeButtonWidth, closeButtonHeight,
+                closeXTexStart, closeYTexStart, closeYDiffText,
+                closeButtonTexture, closeTextureWidth, closeTextureHeight,
+                (button) -> toggleHistoryScreen(),
+                Component.literal("-▼-")
+        );
 
     }
 
@@ -256,36 +379,32 @@ public class DialogScreen extends Screen {
             return;
         }
 
-        ResourceLocation buttonTextureLocation;
+        ResourceLocation buttonTextureLocation = null;
         int buttonWidth = 200; // 默认值
         int buttonHeight = 20; // 默认值
         int textureActualWidth = 200; // 默认图集宽度
         int textureActualHeight = 40; // 默认图集高度
 
-        // 根据配置决定使用自定义纹理还是原版纹理
-        if (top.yourzi.dialog.config.ClientConfig.USE_CUSTOM_BUTTON_TEXTURE.get()) {
-            // 使用自定义纹理
-            buttonTextureLocation = new ResourceLocation(Dialog.MODID, "textures/buttons/button.png");
-            try {
-                Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(buttonTextureLocation);
-                if (resourceOptional.isPresent()) {
-                    try (InputStream inputStream = resourceOptional.get().open()) {
-                        STBBackendImage image = STBBackendImage.read(inputStream);
-                        textureActualWidth = image.getWidth() * 60 / 40;
-                        textureActualHeight = 40;
-                        buttonWidth = textureActualWidth;
-                        buttonHeight = 20;
-                        image.close();
-                    } catch (IOException e) {
-                        Dialog.LOGGER.error("Failed to load custom button texture to get dimensions: {}", buttonTextureLocation, e);
-                    }
-                } else {
-                    Dialog.LOGGER.warn("Custom button texture resource not found: {}", buttonTextureLocation);
-                }
-            } catch (Exception e) {
-                Dialog.LOGGER.error("Error accessing custom button texture resource: {}", buttonTextureLocation, e);
+        // 优先使用本地自定义按钮图集，如果没有则使用原版纹理
+        ResourceLocation customButtonAtlas = new ResourceLocation(Dialog.MODID, "textures/buttons/button_atlas.png");
+        boolean useCustomTexture = false;
+        
+        try {
+            Optional<Resource> resourceOptional = Minecraft.getInstance().getResourceManager().getResource(customButtonAtlas);
+            if (resourceOptional.isPresent()) {
+                buttonTextureLocation = customButtonAtlas;
+                // 使用统一图集尺寸
+                textureActualWidth = 256;
+                textureActualHeight = 128;
+                buttonWidth = 200;
+                buttonHeight = 20;
+                useCustomTexture = true;
             }
-        } else {
+        } catch (Exception e) {
+            Dialog.LOGGER.error("Error accessing custom button atlas resource: {}", customButtonAtlas, e);
+        }
+        
+        if (!useCustomTexture) {
             // 使用Minecraft原版按钮纹理
             buttonTextureLocation = new ResourceLocation("minecraft", "textures/gui/widgets.png");
             buttonWidth = 200;
@@ -308,11 +427,16 @@ public class DialogScreen extends Screen {
             int yTexStart = 0;
             int yDiffText = buttonHeight;
             
-            if (!top.yourzi.dialog.config.ClientConfig.USE_CUSTOM_BUTTON_TEXTURE.get()) {
+            if (!useCustomTexture) {
                 // 原版按钮纹理的起始位置和差值
                 xTexStart = 0;
                 yTexStart = 66;
                 yDiffText = 20; // 原版按钮的高度差值
+            } else {
+                // 自定义图集中选项按钮的位置 (大按钮区域)
+                xTexStart = 0;
+                yTexStart = 0;
+                yDiffText = 20; // 悬停状态在下方20像素处
             }
             
             OptionButton button = new OptionButton(

@@ -1,0 +1,32 @@
+{
+  "dialogs": [
+    {
+      "id": "test_skip_1",
+      "text": "这是一条可以跳过的对话。按住Ctrl键可以快速跳过。",
+      "speaker": "测试角色",
+      "allowSkip": true
+    },
+    {
+      "id": "test_skip_2",
+      "text": "这是一条不可跳过的对话。即使按住Ctrl键也无法跳过。",
+      "speaker": "测试角色",
+      "allowSkip": false
+    },
+    {
+      "id": "test_skip_3",
+      "text": "这是一条默认可跳过的对话（未设置allowSkip字段）。",
+      "speaker": "测试角色"
+    },
+    {
+      "id": "test_end_1",
+      "text": "这是一条会结束对话的条目。播放完毕后对话将直接结束。",
+      "speaker": "测试角色",
+      "endDialog": true
+    },
+    {
+      "id": "test_end_2",
+      "text": "这条对话不会被显示，因为上一条已经结束了对话。",
+      "speaker": "测试角色"
+    }
+  ]
+}

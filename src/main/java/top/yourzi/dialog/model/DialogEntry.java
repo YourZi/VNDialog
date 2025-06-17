@@ -46,6 +46,9 @@ public class DialogEntry {
     // 是否允许跳过此对话条目
     @SerializedName("allowSkip")
     private Boolean allowSkip;
+    // 是否在此条对话后结束整个对话
+    @SerializedName("endDialog")
+    private Boolean endDialog;
 
     /**
      * 检查是否允许跳过此对话条目
@@ -53,6 +56,14 @@ public class DialogEntry {
      */
     public boolean isSkipAllowed() {
         return allowSkip == null || allowSkip;
+    }
+
+    /**
+     * 检查是否应该在此条对话后结束整个对话
+     * @return 如果应该结束对话返回true，否则返回false。如果未设置则默认为false
+     */
+    public boolean isEndDialog() {
+        return endDialog != null && endDialog;
     }
 
     // 为了兼容旧的单个命令的JSON格式，添加一个辅助的setter
