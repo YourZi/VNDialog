@@ -245,8 +245,8 @@ public class DialogScreen extends Screen {
             historyTextureWidth = 256;
             historyTextureHeight = 256;
         } else {
-            // 自定义图集中历史记录按钮的位置 (小按钮区域左侧)
-            historyXTexStart = 200;
+            // 自定义图集中历史记录按钮的位置 (小按钮区域中间)
+            historyXTexStart = 220;
             historyYTexStart = 0;
             historyYDiffText = 20;
             historyTextureWidth = 256;
@@ -298,8 +298,8 @@ public class DialogScreen extends Screen {
             autoPlayTextureWidth = 256;
             autoPlayTextureHeight = 256;
         } else {
-            // 自定义图集中自动播放按钮的位置 (小按钮区域中间)
-            autoPlayXTexStart = 220;
+            // 自定义图集中自动播放按钮的位置 (小按钮区域左侧)
+            autoPlayXTexStart = 200;
             autoPlayYTexStart = 0;
             autoPlayYDiffText = 20;
             autoPlayTextureWidth = 256;
